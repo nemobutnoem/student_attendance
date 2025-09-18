@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screen/event_management_screen.dart';
-// Import các màn hình placeholder (sẽ tạo ở bước 2)
+import '../screen/student_in_event_screen.dart';
 import 'placeholder_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -29,6 +29,11 @@ class HomeScreen extends StatelessWidget {
         'title': 'Quản lý Phiên',
         'icon': Icons.access_time,
         'screen': const PlaceholderScreen(title: 'Quản lý Phiên'),
+      },
+      {
+        'title': 'Sinh viên trong Sự kiện',
+        'icon': Icons.group_add,
+        'screen': const StudentInEventScreen(eventId: "1"),
       },
       {
         'title': 'Báo cáo & Thống kê',
