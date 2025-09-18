@@ -86,7 +86,10 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                 child: ListTile(
                   leading: CircleAvatar(child: Text('${student.studentId}')),
                   title: Text("Mã sinh viên: ${student.studentId}"),
-                  subtitle: Text("Trạng thái: ${student.status}"),
+                  subtitle: Text(
+                    "Sự kiện: ${student.event?['title'] ?? 'Không có'}\n"
+                        "Trạng thái: ${student.status}",
+                  ),
                   trailing: PopupMenuButton<String>(
                     onSelected: (value) => _handleMenuSelection(value, student),
                     itemBuilder: (context) => [

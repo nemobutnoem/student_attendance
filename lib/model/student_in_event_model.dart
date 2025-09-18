@@ -17,15 +17,15 @@ class StudentInEvent {
 
   factory StudentInEvent.fromJson(Map<String, dynamic> json) {
     return StudentInEvent(
-      id: json['id'] as int,
+      id: json['id'] as int?,
       status: json['status'] as String,
-      eventId: json['event_id'] as int,
       studentId: json['student_id'] as int,
+      // lấy eventId từ cả 2 trường hợp: có join hoặc không
+      eventId: (json['event_id'] ?? json['event']?['event_id']) as int,
       student: json['student'] != null
           ? Student.fromJson(json['student'])
           : null,
       event: json['event'],
-
     );
   }
 
@@ -36,8 +36,9 @@ class StudentInEvent {
       'status': status,
     };
   }
-}
 
+  String get eventTitle => event?['title'] ?? 'Không có tên sự kiện';
+}
 
 class Student {
   final int studentId;
@@ -58,4 +59,3 @@ class Student {
     );
   }
 }
-

@@ -24,17 +24,20 @@ class StudentInEventService {
     try {
       final data = await _supabase
           .from(_tableName)
-          .select('id, status, event_id, student_id, student!inner(student_id, name, email)')
+          .select('''
+          id, status, event_id, student_id,
+          student(student_id, name, email),
+          event(event_id, title)
+        ''')
           .eq('event_id', eventId);
+
       print('🔥 Raw data từ Supabase: $data');
-      return data.map((item) => StudentInEvent.fromJson(item)).toList();
+      return data.map<StudentInEvent>((item) => StudentInEvent.fromJson(item)).toList();
     } catch (e) {
       print('Lỗi khi lấy danh sách sinh viên: $e');
       throw Exception('Không thể tải danh sách sinh viên.');
     }
   }
-
-
 
   /// Cập nhật trạng thái của một sinh viên trong sự kiện (ví dụ: 'attended', 'cancelled').
   Future<void> updateStudentStatus(int? studentInEventId, String newStatus) async {
@@ -53,7 +56,7 @@ class StudentInEventService {
   }
 
   /// Thêm một sinh viên vào sự kiện.
-  Future<Map<String, dynamic>?> addStudentToEvent(int eventId, int studentId) async {
+  Future<StudentInEvent?> addStudentToEvent(int eventId, int studentId) async {
     try {
       final data = await _supabase
           .from(_tableName) // student_in_event
@@ -62,10 +65,16 @@ class StudentInEventService {
         'student_id': studentId,
         'status': 'registered',
       })
-          .select('id, student_id, status, event:event_id (id, title, start_date, end_date)')
+          .select('''
+          id, student_id, status,
+          student(student_id, name, email),
+          event:event_id(event_id, title)
+        ''')
           .single();
 
-      return data;
+      print("🔥 Insert result: $data");
+
+      return StudentInEvent.fromJson(data);
     } on PostgrestException catch (e) {
       if (e.code == '23505') {
         throw Exception("Sinh viên này đã đăng ký sự kiện.");
@@ -74,7 +83,7 @@ class StudentInEventService {
       throw Exception("Không thể thêm sinh viên vào sự kiện.");
     } catch (e) {
       print('Lỗi khác khi thêm sinh viên: $e');
-      throw Exception("Không thể thêm sinh vQiên vào sự kiện.");
+      throw Exception("Không thể thêm sinh viên vào sự kiện.");
     }
   }
 
