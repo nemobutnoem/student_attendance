@@ -1,35 +1,35 @@
 class StudentInEvent {
-  // 1. Sửa kiểu dữ liệu của các ID thành int
-  final int? id; // Khóa chính, có thể null khi tạo mới
+  final int? id;
   final int eventId;
   final int studentId;
-  final String status; // registered / cancelled / attended
+  final String status;
+  final Student? student;
+  final Map<String, dynamic>? event;
 
   StudentInEvent({
-    this.id, // Cho phép id là null
+    this.id,
     required this.eventId,
     required this.studentId,
     required this.status,
+    this.student,
+    this.event,
   });
 
-  // ==========================================================
-  // SỬA LẠI HÀM fromJson
-  // ==========================================================
   factory StudentInEvent.fromJson(Map<String, dynamic> json) {
     return StudentInEvent(
-      // 2. Đọc đúng tên cột và kiểu dữ liệu
-      id: json['id'],
-      eventId: json['event_id'],
-      studentId: json['student_id'],
-      status: json['status'],
+      id: json['id'] as int,
+      status: json['status'] as String,
+      eventId: json['event_id'] as int,
+      studentId: json['student_id'] as int,
+      student: json['student'] != null
+          ? Student.fromJson(json['student'])
+          : null,
+      event: json['event'],
+
     );
   }
 
-  // ==========================================================
-  // SỬA LẠI HÀM toJson
-  // ==========================================================
   Map<String, dynamic> toJson() {
-    // 3. Chỉ gửi các trường dữ liệu, không gửi khóa chính 'id'
     return {
       'event_id': eventId,
       'student_id': studentId,
@@ -37,3 +37,25 @@ class StudentInEvent {
     };
   }
 }
+
+
+class Student {
+  final int studentId;
+  final String name;
+  final String email;
+
+  Student({
+    required this.studentId,
+    required this.name,
+    required this.email,
+  });
+
+  factory Student.fromJson(Map<String, dynamic> json) {
+    return Student(
+      studentId: json['student_id'] as int,
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+    );
+  }
+}
+

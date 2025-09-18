@@ -3,7 +3,6 @@ import '../model/student_in_event_model.dart';
 import '../services/student_in_event_service.dart';
 
 class StudentInEventScreen extends StatefulWidget {
-  // Constructor đúng phải ở đây, trong file UI
   final int eventId;
   final String eventTitle;
 
@@ -38,15 +37,15 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
       if (value == "attended" || value == "cancelled") {
         await _service.updateStudentStatus(student.id, value);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cập nhật trạng thái thành công!')),
+          const SnackBar(content: Text('Cập nhật trạng thái thành công!')),
         );
       } else if (value == "delete") {
         await _service.deleteStudentFromEvent(student.id);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đã xóa sinh viên khỏi sự kiện.')),
+          const SnackBar(content: Text('Đã xóa sinh viên khỏi sự kiện.')),
         );
       }
-      _loadData(); // Tải lại dữ liệu sau khi hành động thành công
+      _loadData();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Đã xảy ra lỗi: $e')),
@@ -105,6 +104,98 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
             },
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final controller = TextEditingController();
+          int? selectedEventId; // sự kiện được chọn
+          List<Map<String, dynamic>> events = [];
+
+          try {
+            // Gọi API lấy danh sách sự kiện đang tồn tại
+            events = await _service.fetchActiveEvents();
+            // fetchActiveEvents: tự viết trong service, query event có end_date >= NOW()
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Lỗi khi tải sự kiện: $e")),
+            );
+            return;
+          }
+
+          await showDialog(
+            context: context,
+            builder: (context) {
+              return StatefulBuilder( // cần StatefulBuilder để dropdown setState
+                builder: (context, setState) {
+                  return AlertDialog(
+                    title: const Text("Thêm sinh viên vào sự kiện"),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Nhập mã sinh viên
+                        TextField(
+                          controller: controller,
+                          decoration: const InputDecoration(
+                            labelText: "Nhập mã sinh viên",
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Dropdown chọn sự kiện
+                        DropdownButtonFormField<int>(
+                          value: selectedEventId,
+                          decoration: const InputDecoration(
+                            labelText: "Chọn sự kiện",
+                            border: OutlineInputBorder(),
+                          ),
+                          items: events.map((event) {
+                            return DropdownMenuItem<int>(
+                              value: event['event_id'],
+                              child: Text(event['title']),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedEventId = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text("Hủy"),
+                      ),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final id = int.tryParse(controller.text.trim());
+                          if (id != null && selectedEventId != null) {
+                            try {
+                              await _service.addStudentToEvent(selectedEventId!, id);
+                              Navigator.pop(context); // đóng dialog
+                              _loadData(); // refresh lại danh sách
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Thêm sinh viên thành công!")),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(e.toString())),
+                              );
+                            }
+                          }
+                        },
+                        child: const Text("Thêm"),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
