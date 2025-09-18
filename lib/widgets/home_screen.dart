@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../screen/event_management_screen.dart';
 import '../screen/student_in_event_screen.dart';
+import '../screens/all_students_registrations_screen.dart';
+import '../screen/reporting_screen.dart';
 import 'placeholder_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -39,7 +41,7 @@ class HomeScreen extends StatelessWidget {
       {
         'title': 'Báo cáo & Thống kê',
         'icon': Icons.bar_chart,
-        'screen': const PlaceholderScreen(title: 'Báo cáo & Thống kê'),
+        'screen': const ReportingScreen(), // <-- THAY THẾ Ở ĐÂY
       },
       {
         'title': 'Cài đặt',

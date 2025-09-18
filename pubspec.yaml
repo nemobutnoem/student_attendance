@@ -31,6 +31,10 @@ dependencies:
   flutter:
     sdk: flutter
   supabase_flutter: ^2.3.4
+  excel: ^4.0.2             # Để tạo và chỉnh sửa file Excel (.xlsx)
+  pdf: ^3.10.8              # Để tạo file PDF
+  path_provider: ^2.1.3     # Để tìm đúng đường dẫn lưu file trên điện thoại
+  permission_handler: ^11.3.1 # Để xin quyền truy cập bộ nhớ từ người dùng
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
