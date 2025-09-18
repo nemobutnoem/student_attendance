@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screen/event_management_screen.dart';
 import '../screen/student_in_event_screen.dart';
+import '../screen/university_management_screen.dart';
 import 'placeholder_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -23,7 +24,7 @@ class HomeScreen extends StatelessWidget {
       {
         'title': 'Quản lý Trường/ĐV',
         'icon': Icons.school,
-        'screen': const PlaceholderScreen(title: 'Quản lý Trường/Đơn vị'),
+        'screen': const UniversityScreen(),
       },
       {
         'title': 'Quản lý Phiên',
@@ -31,10 +32,10 @@ class HomeScreen extends StatelessWidget {
         'screen': const PlaceholderScreen(title: 'Quản lý Phiên'),
       },
       {
-        'title': 'SV trong Sự kiện (ID: 3)',
+        'title': 'SV trong Sự kiện',
         'icon': Icons.group_add,
         // Mục này để xem sinh viên trong một sự kiện CỤ THỂ
-        'screen': StudentInEventScreen(eventId: 3, eventTitle: "Sự kiện có SV"),
+        'screen': StudentInEventScreen(eventId: 4, eventTitle: "Sự kiện có SV"),
       },
       {
         'title': 'Báo cáo & Thống kê',
@@ -49,10 +50,7 @@ class HomeScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Trang chủ'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Trang chủ'), centerTitle: true),
       body: GridView.builder(
         padding: const EdgeInsets.all(16.0),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -80,7 +78,12 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeatureCard(BuildContext context, {required String title, required IconData icon, required VoidCallback onTap}) {
+  Widget _buildFeatureCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
