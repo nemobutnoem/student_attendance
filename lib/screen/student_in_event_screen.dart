@@ -3,11 +3,18 @@ import '../model/student_in_event_model.dart';
 import '../services/student_in_event_service.dart';
 
 class StudentInEventScreen extends StatefulWidget {
-  final String eventId;
-  const StudentInEventScreen({Key? key, required this.eventId}) : super(key: key);
+  // Constructor đúng phải ở đây, trong file UI
+  final int eventId;
+  final String eventTitle;
+
+  const StudentInEventScreen({
+    super.key,
+    required this.eventId,
+    required this.eventTitle,
+  });
 
   @override
-  _StudentInEventScreenState createState() => _StudentInEventScreenState();
+  State<StudentInEventScreen> createState() => _StudentInEventScreenState();
 }
 
 class _StudentInEventScreenState extends State<StudentInEventScreen> {
@@ -17,28 +24,57 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
   @override
   void initState() {
     super.initState();
-    _studentsInEvent = _service.fetchStudentsInEvent(widget.eventId);
+    _loadData();
   }
 
-  void _refreshData() {
+  void _loadData() {
     setState(() {
       _studentsInEvent = _service.fetchStudentsInEvent(widget.eventId);
     });
   }
 
+  void _handleMenuSelection(String value, StudentInEvent student) async {
+    try {
+      if (value == "attended" || value == "cancelled") {
+        await _service.updateStudentStatus(student.id, value);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cập nhật trạng thái thành công!')),
+        );
+      } else if (value == "delete") {
+        await _service.deleteStudentFromEvent(student.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đã xóa sinh viên khỏi sự kiện.')),
+        );
+      }
+      _loadData(); // Tải lại dữ liệu sau khi hành động thành công
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đã xảy ra lỗi: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Students in Event")),
+      appBar: AppBar(
+        title: Text('SV trong: ${widget.eventTitle}'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+          ),
+        ],
+      ),
       body: FutureBuilder<List<StudentInEvent>>(
         future: _studentsInEvent,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
+            return Center(child: Text("Lỗi: ${snapshot.error}"));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("No students in this event"));
+            return const Center(child: Text("Chưa có sinh viên nào trong sự kiện này."));
           }
 
           final students = snapshot.data!;
@@ -46,24 +82,24 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
             itemCount: students.length,
             itemBuilder: (context, index) {
               final student = students[index];
-              return ListTile(
-                title: Text("Student ID: ${student.studentId}"),
-                subtitle: Text("Status: ${student.status}"),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (value) async {
-                    if (value == "attended" || value == "cancelled") {
-                      await _service.updateStudentStatus(student.id, value);
-                      _refreshData();
-                    } else if (value == "delete") {
-                      await _service.deleteStudentFromEvent(student.id);
-                      _refreshData();
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(value: "attended", child: Text("Mark as Attended")),
-                    const PopupMenuItem(value: "cancelled", child: Text("Cancel Registration")),
-                    const PopupMenuItem(value: "delete", child: Text("Remove from Event")),
-                  ],
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: ListTile(
+                  leading: CircleAvatar(child: Text('${student.studentId}')),
+                  title: Text("Mã sinh viên: ${student.studentId}"),
+                  subtitle: Text("Trạng thái: ${student.status}"),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) => _handleMenuSelection(value, student),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(value: "attended", child: Text("Đánh dấu: Đã tham dự")),
+                      const PopupMenuItem(value: "cancelled", child: Text("Đánh dấu: Đã hủy")),
+                      const PopupMenuDivider(),
+                      const PopupMenuItem(
+                        value: "delete",
+                        child: Text("Xóa khỏi sự kiện", style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

@@ -1,28 +1,36 @@
 class StudentInEvent {
-  final String id; // student_in_event_id
-  final String eventId;
-  final String studentId;
+  // 1. Sửa kiểu dữ liệu của các ID thành int
+  final int? id; // Khóa chính, có thể null khi tạo mới
+  final int eventId;
+  final int studentId;
   final String status; // registered / cancelled / attended
 
   StudentInEvent({
-    required this.id,
+    this.id, // Cho phép id là null
     required this.eventId,
     required this.studentId,
     required this.status,
   });
 
+  // ==========================================================
+  // SỬA LẠI HÀM fromJson
+  // ==========================================================
   factory StudentInEvent.fromJson(Map<String, dynamic> json) {
     return StudentInEvent(
-      id: json['student_in_event_id'],
+      // 2. Đọc đúng tên cột và kiểu dữ liệu
+      id: json['id'],
       eventId: json['event_id'],
       studentId: json['student_id'],
       status: json['status'],
     );
   }
 
+  // ==========================================================
+  // SỬA LẠI HÀM toJson
+  // ==========================================================
   Map<String, dynamic> toJson() {
+    // 3. Chỉ gửi các trường dữ liệu, không gửi khóa chính 'id'
     return {
-      'student_in_event_id': id,
       'event_id': eventId,
       'student_id': studentId,
       'status': status,

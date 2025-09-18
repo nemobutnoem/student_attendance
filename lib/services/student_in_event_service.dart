@@ -1,51 +1,67 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/student_in_event_model.dart';
-import '../util/constants.dart';
 
+// Đảm bảo file này chỉ chứa class StudentInEventService
 class StudentInEventService {
-  final String baseUrl = "https://68cba3cb716562cf507455bb.mockapi.io/attendance-system";
+  SupabaseClient get _supabase => Supabase.instance.client;
+  static const String _tableName = 'student_in_event';
+  static const String _idColumn = 'id';
 
-  Future<List<StudentInEvent>> fetchStudentsInEvent(String eventId) async {
-    final response = await http.get(Uri.parse('$baseUrl?event_id=$eventId'));
-
-    if (response.statusCode == 200) {
-      List data = jsonDecode(response.body);
-      return data.map((e) => StudentInEvent.fromJson(e)).toList();
-    } else {
-      throw Exception("Failed to load students in event");
+  /// Lấy TẤT CẢ các lượt đăng ký của sinh viên trong tất cả sự kiện.
+  Future<List<StudentInEvent>> fetchAllStudentRegistrations() async {
+    try {
+      // Dùng .select() mà không có bộ lọc để lấy tất cả bản ghi
+      final data = await _supabase.from(_tableName).select();
+      return data.map((item) => StudentInEvent.fromJson(item)).toList();
+    } catch (e) {
+      print('Lỗi khi lấy tất cả lượt đăng ký: $e');
+      throw Exception('Không thể tải danh sách tổng hợp.');
     }
   }
 
-  Future<void> addStudentInEvent(StudentInEvent student) async {
-    final response = await http.post(
-      Uri.parse(baseUrl),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(student.toJson()),
-    );
-
-    if (response.statusCode != 201) {
-      throw Exception("Failed to add student to event");
+  /// Lấy danh sách sinh viên đã đăng ký trong một sự kiện cụ thể.
+  Future<List<StudentInEvent>> fetchStudentsInEvent(int eventId) async {
+    try {
+      final data = await _supabase
+          .from(_tableName)
+          .select()
+          .eq('event_id', eventId);
+      return data.map((item) => StudentInEvent.fromJson(item)).toList();
+    } catch (e) {
+      print('Lỗi khi lấy danh sách sinh viên: $e');
+      throw Exception('Không thể tải danh sách sinh viên.');
     }
   }
 
-  Future<void> updateStudentStatus(String id, String newStatus) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/$id'),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"status": newStatus}),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception("Failed to update student status");
+  /// Cập nhật trạng thái của một sinh viên trong sự kiện (ví dụ: 'attended', 'cancelled').
+  Future<void> updateStudentStatus(int? studentInEventId, String newStatus) async {
+    if (studentInEventId == null) {
+      throw Exception('ID bản ghi không hợp lệ để cập nhật.');
+    }
+    try {
+      await _supabase
+          .from(_tableName)
+          .update({'status': newStatus})
+          .eq(_idColumn, studentInEventId);
+    } catch (e) {
+      print('Lỗi khi cập nhật trạng thái: $e');
+      throw Exception('Không thể cập nhật trạng thái.');
     }
   }
 
-  Future<void> deleteStudentFromEvent(String id) async {
-    final response = await http.delete(Uri.parse('$baseUrl/$id'));
-
-    if (response.statusCode != 200) {
-      throw Exception("Failed to delete student from event");
+  /// Xóa một sinh viên khỏi sự kiện.
+  Future<void> deleteStudentFromEvent(int? studentInEventId) async {
+    if (studentInEventId == null) {
+      throw Exception('ID bản ghi không hợp lệ để xóa.');
+    }
+    try {
+      await _supabase
+          .from(_tableName)
+          .delete()
+          .eq(_idColumn, studentInEventId);
+    } catch (e) {
+      print('Lỗi khi xóa sinh viên khỏi sự kiện: $e');
+      throw Exception('Không thể xóa sinh viên.');
     }
   }
 }

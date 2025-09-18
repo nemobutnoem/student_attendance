@@ -31,9 +31,10 @@ class HomeScreen extends StatelessWidget {
         'screen': const PlaceholderScreen(title: 'Quản lý Phiên'),
       },
       {
-        'title': 'Sinh viên trong Sự kiện',
+        'title': 'SV trong Sự kiện (ID: 3)',
         'icon': Icons.group_add,
-        'screen': const StudentInEventScreen(eventId: "1"),
+        // Mục này để xem sinh viên trong một sự kiện CỤ THỂ
+        'screen': StudentInEventScreen(eventId: 3, eventTitle: "Sự kiện có SV"),
       },
       {
         'title': 'Báo cáo & Thống kê',
