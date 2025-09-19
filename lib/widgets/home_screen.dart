@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:student_attendance/screen/student_management_screen.dart';
 import '../screen/event_management_screen.dart';
 import '../screen/student_in_event_screen.dart';
-import '../screen/event_session_management_screen.dart';
 import '../screen/university_management_screen.dart';
 import 'placeholder_screen.dart';
 
@@ -21,7 +19,7 @@ class HomeScreen extends StatelessWidget {
       {
         'title': 'Quản lý Sinh viên',
         'icon': Icons.people,
-        'screen': const StudentManagementScreen(),
+        'screen': const PlaceholderScreen(title: 'Quản lý Sinh viên'),
       },
       {
         'title': 'Quản lý Trường/ĐV',
@@ -31,12 +29,13 @@ class HomeScreen extends StatelessWidget {
       {
         'title': 'Quản lý Phiên',
         'icon': Icons.access_time,
-        'screen': const EventSessionManagementScreen(),
+        'screen': const PlaceholderScreen(title: 'Quản lý Phiên'),
       },
       {
         'title': 'SV trong Sự kiện',
         'icon': Icons.group_add,
-        'screen': StudentInEventScreen(eventId: 3, eventTitle: "Sự kiện có SV"),
+        // Mục này để xem sinh viên trong một sự kiện CỤ THỂ
+        'screen': StudentInEventScreen(eventId: 4, eventTitle: "Sự kiện có SV"),
       },
       {
         'title': 'Báo cáo & Thống kê',
@@ -51,10 +50,7 @@ class HomeScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Trang chủ'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Trang chủ'), centerTitle: true),
       body: GridView.builder(
         padding: const EdgeInsets.all(16.0),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -82,7 +78,12 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeatureCard(BuildContext context, {required String title, required IconData icon, required VoidCallback onTap}) {
+  Widget _buildFeatureCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
