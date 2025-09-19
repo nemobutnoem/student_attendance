@@ -20,24 +20,24 @@ class StudentInEventService {
   // }
 
   /// Lấy danh sách sinh viên đã đăng ký trong một sự kiện cụ thể.
-  Future<List<StudentInEvent>> fetchStudentsInEvent(int eventId) async {
+  Future<List<StudentInEvent>> fetchAllStudentsInEvents() async {
     try {
       final data = await _supabase
           .from(_tableName)
           .select('''
           id, status, event_id, student_id,
-          student(student_id, name, email),
+          students(student_id, name, email),
           event(event_id, title)
-        ''')
-          .eq('event_id', eventId);
+        ''');
 
-      print('🔥 Raw data từ Supabase: $data');
+      print('🔥 Raw data tất cả sự kiện: $data');
       return data.map<StudentInEvent>((item) => StudentInEvent.fromJson(item)).toList();
     } catch (e) {
-      print('Lỗi khi lấy danh sách sinh viên: $e');
-      throw Exception('Không thể tải danh sách sinh viên.');
+      print('Lỗi khi lấy tất cả sinh viên trong các sự kiện: $e');
+      throw Exception('Không thể tải danh sách sinh viên trong các sự kiện.');
     }
   }
+
 
   /// Cập nhật trạng thái của một sinh viên trong sự kiện (ví dụ: 'attended', 'cancelled').
   Future<void> updateStudentStatus(int? studentInEventId, String newStatus) async {
@@ -59,7 +59,7 @@ class StudentInEventService {
   Future<StudentInEvent?> addStudentToEvent(int eventId, int studentId) async {
     try {
       final data = await _supabase
-          .from(_tableName) // student_in_event
+          .from(_tableName)
           .insert({
         'event_id': eventId,
         'student_id': studentId,
@@ -68,11 +68,15 @@ class StudentInEventService {
           .select('''
           id, student_id, status,
           student(student_id, name, email),
-          event:event_id(event_id, title)
-        ''')
+          event(event_id, title)
+        ''') // đồng bộ cách viết với fetchStudentsInEvent
           .single();
 
       print("🔥 Insert result: $data");
+
+      // Sau khi insert, gọi fetch lại list cho eventId này
+      final updatedList = await fetchAllStudentsInEvents();
+      print("✅ Danh sách sau insert: $updatedList");
 
       return StudentInEvent.fromJson(data);
     } on PostgrestException catch (e) {
@@ -86,6 +90,7 @@ class StudentInEventService {
       throw Exception("Không thể thêm sinh viên vào sự kiện.");
     }
   }
+
 
 
 

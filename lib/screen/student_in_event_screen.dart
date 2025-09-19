@@ -28,7 +28,7 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
 
   void _loadData() {
     setState(() {
-      _studentsInEvent = _service.fetchStudentsInEvent(widget.eventId);
+      _studentsInEvent = _service.fetchAllStudentsInEvents();
     });
   }
 
@@ -178,9 +178,20 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                             try {
                               await _service.addStudentToEvent(selectedEventId!, id);
                               Navigator.pop(context); // đóng dialog
-                              _loadData(); // refresh lại danh sách
+
+                              if (selectedEventId == widget.eventId) {
+                                // Nếu thêm vào đúng sự kiện đang xem → reload list
+                                _loadData();
+                              }
+
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Thêm sinh viên thành công!")),
+                                SnackBar(
+                                  content: Text(
+                                    selectedEventId == widget.eventId
+                                        ? "Thêm sinh viên thành công!"
+                                        : "Sinh viên đã được thêm vào sự kiện khác (${events.firstWhere((e) => e['event_id'] == selectedEventId)['title']})",
+                                  ),
+                                ),
                               );
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -189,6 +200,7 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                             }
                           }
                         },
+
                         child: const Text("Thêm"),
                       ),
                     ],
