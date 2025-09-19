@@ -60,6 +60,24 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
         title: Text('SV tham gia sự kiện'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.file_upload),
+            onPressed: () async {
+              try {
+                // Gọi hàm import Excel
+                await _service.importStudentsFromExcel(); // hàm bulk import bạn đã viết
+                _loadData(); // refresh sau khi import
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Import Excel thành công!')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Lỗi khi import Excel: $e')),
+                );
+              }
+            },
+            tooltip: "Import từ file Excel",
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadData,
           ),
