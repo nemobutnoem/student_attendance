@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../model/event_model.dart';
-import '../services/api_service.dart'; // <-- 1. Thêm import cho service
+
 import '../app_theme.dart';
+import '../model/event_model.dart';
+import '../services/api_service.dart';
 
 class CreateEditEventScreen extends StatefulWidget {
   final Event? event; // Nếu event khác null, đây là màn hình chỉnh sửa
@@ -21,7 +22,6 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
 
-  // 2. Thêm các biến cần thiết cho việc gọi API
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
 
@@ -61,7 +61,6 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
     }
   }
 
-  // 3. Sửa lại hoàn toàn hàm _saveForm để gọi API
   void _saveForm() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -74,12 +73,12 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
     }
 
     setState(() {
-      _isLoading = true; // Bật trạng thái loading
+      _isLoading = true;
     });
 
     try {
       final eventToSave = Event(
-        id: widget.event?.id, // Giữ lại id nếu là chỉnh sửa, nếu không thì là null
+        id: widget.event?.id,
         title: _titleController.text,
         description: _descriptionController.text,
         organizer: _organizerController.text,
@@ -88,31 +87,26 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
       );
 
       if (widget.event == null) {
-        // Tạo mới sự kiện
         await _apiService.createEvent(eventToSave);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Tạo sự kiện thành công!')),
         );
       } else {
-        // Cập nhật sự kiện
         await _apiService.updateEvent(eventToSave);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cập nhật sự kiện thành công!')),
         );
       }
 
-      // Nếu thành công, quay về màn hình trước
       if (mounted) {
         Navigator.of(context).pop();
       }
 
     } catch (e) {
-      // Nếu API báo lỗi, hiển thị cho người dùng
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Đã xảy ra lỗi: $e')),
       );
     } finally {
-      // Luôn tắt loading khi hàm kết thúc
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -177,7 +171,6 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                 ],
               ),
               const SizedBox(height: 32),
-              // 4. Cập nhật nút bấm để hiển thị loading
               _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : ElevatedButton(

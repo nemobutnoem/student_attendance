@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../domain/entities/student.dart';
+import '../domain/entities/Student.dart';
 
 class StudentService {
   final supabase = Supabase.instance.client;

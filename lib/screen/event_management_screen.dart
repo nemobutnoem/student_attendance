@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../app_theme.dart';
 import '../model/event_model.dart';
 import '../services/api_service.dart';
 import 'create_edit_event_screen.dart';
-import '../app_theme.dart';
-import 'package:intl/intl.dart'; // Thêm thư viện intl để format ngày tháng đẹp hơn
 
 class EventManagementScreen extends StatefulWidget {
   const EventManagementScreen({super.key});
@@ -28,11 +29,7 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
     });
   }
 
-  // ==========================================================
-  // HÀM XỬ LÝ VIỆC XÓA SỰ KIỆN
-  // ==========================================================
   void _handleDelete(Event event) {
-    // Hiển thị hộp thoại xác nhận trước khi xóa
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -43,29 +40,25 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
             TextButton(
               child: const Text('Hủy'),
               onPressed: () {
-                Navigator.of(dialogContext).pop(); // Đóng hộp thoại
+                Navigator.of(dialogContext).pop();
               },
             ),
             TextButton(
               child: const Text('Xóa', style: TextStyle(color: Colors.red)),
               onPressed: () async {
-                Navigator.of(dialogContext).pop(); // Đóng hộp thoại trước
+                Navigator.of(dialogContext).pop();
                 try {
-                  // Gọi API để xóa
                   await apiService.deleteEvent(event.id);
 
-                  // Hiển thị thông báo thành công
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Đã xóa sự kiện thành công!')),
                     );
                   }
 
-                  // Tải lại danh sách sự kiện để cập nhật giao diện
                   _loadEvents();
 
                 } catch (e) {
-                  // Hiển thị thông báo nếu có lỗi
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Lỗi khi xóa: $e')),
@@ -146,9 +139,6 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
                             ).then((_) => _loadEvents());
                           },
                         ),
-                        // ==========================================================
-                        // GỌI HÀM _handleDelete KHI NHẤN NÚT
-                        // ==========================================================
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.redAccent),
                           onPressed: () => _handleDelete(event),

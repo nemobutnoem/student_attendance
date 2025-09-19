@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../domain/entities/student.dart';
+import '../../domain/entities/Student.dart';
 import '../services/student_service.dart';
 
 
