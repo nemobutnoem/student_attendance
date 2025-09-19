@@ -186,15 +186,11 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                             try {
                               await _service.addStudentToEvent(selectedEventId!, id);
                               Navigator.pop(context); // đóng dialog
-
+                              _loadData();
 
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    selectedEventId == widget.eventId
-                                        ? "Thêm sinh viên thành công!"
-                                        : "Sinh viên đã được thêm vào sự kiện khác (${events.firstWhere((e) => e['event_id'] == selectedEventId)['title']})",
-                                  ),
+                                const SnackBar(
+                                  content: Text("Thêm sinh viên thành công!"),
                                 ),
                               );
                             } catch (e) {
