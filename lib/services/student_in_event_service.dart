@@ -26,7 +26,7 @@ class StudentInEventService {
           .from(_tableName)
           .select('''
           id, status, event_id, student_id,
-          students(student_id, name, email),
+          students(student_id, student_code, name, email),
           event(event_id, title)
         ''');
 
@@ -56,8 +56,22 @@ class StudentInEventService {
   }
 
   /// Thêm một sinh viên vào sự kiện.
-  Future<StudentInEvent?> addStudentToEvent(int eventId, int studentId) async {
+  Future<StudentInEvent?> addStudentToEvent(int eventId, String studentCode) async {
     try {
+      // 1. Tìm student_id theo student_code
+      final studentData = await _supabase
+          .from('students')
+          .select('student_id')
+          .eq('student_code', studentCode)
+          .maybeSingle();
+
+      if (studentData == null) {
+        throw Exception("Không tìm thấy sinh viên với mã: $studentCode");
+      }
+
+      final studentId = studentData['student_id'];
+
+      // 2. Insert student vào event
       final data = await _supabase
           .from(_tableName)
           .insert({
@@ -67,14 +81,14 @@ class StudentInEventService {
       })
           .select('''
           id, student_id, status,
-          students(student_id, name, email),
+          students(student_id, student_code, name, email),
           event(event_id, title)
-        ''') // đồng bộ cách viết với fetchStudentsInEvent
+        ''')
           .single();
 
       print("🔥 Insert result: $data");
 
-      // Sau khi insert, gọi fetch lại list cho eventId này
+      // 3. (Optional) Fetch lại list để debug
       final updatedList = await fetchAllStudentsInEvents();
       print("✅ Danh sách sau insert: $updatedList");
 

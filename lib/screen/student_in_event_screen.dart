@@ -85,7 +85,20 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: ListTile(
                   leading: CircleAvatar(child: Text('${student.studentId}')),
-                  title: Text("Mã sinh viên: ${student.studentId}"),
+                  title: Row(
+                    children: [
+                      const Text(
+                        "MSSV: ",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Expanded(
+                        child: Text(
+                          student.student?.studentCode ?? 'Null',
+                          overflow: TextOverflow.ellipsis, // tránh bị xuống dòng
+                        ),
+                      ),
+                    ],
+                  ),
                   subtitle: Text(
                     "Sự kiện: ${student.event?['title'] ?? 'Không có'}\n"
                         "Trạng thái: ${student.status}",
@@ -181,10 +194,10 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                       ),
                       ElevatedButton(
                         onPressed: () async {
-                          final id = int.tryParse(controller.text.trim());
-                          if (id != null && selectedEventId != null) {
+                          final code = controller.text.trim();
+                          if (code.isNotEmpty && selectedEventId != null) {
                             try {
-                              await _service.addStudentToEvent(selectedEventId!, id);
+                              await _service.addStudentToEvent(selectedEventId!, code);
                               Navigator.pop(context); // đóng dialog
                               _loadData();
 

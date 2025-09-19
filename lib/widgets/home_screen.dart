@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:student_attendance/screen/student_management_screen.dart';
 import '../screen/event_management_screen.dart';
 import '../screen/student_in_event_screen.dart';
 import 'placeholder_screen.dart';
@@ -18,7 +19,7 @@ class HomeScreen extends StatelessWidget {
       {
         'title': 'Quản lý Sinh viên',
         'icon': Icons.people,
-        'screen': const PlaceholderScreen(title: 'Quản lý Sinh viên'),
+        'screen': const StudentManagementScreen(),
       },
       {
         'title': 'Quản lý Trường/ĐV',
