@@ -68,20 +68,22 @@ class _UniversityScreenState extends State<UniversityScreen> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text("Hủy")),
+          // Bên trong hàm _showForm, tìm đến nút ElevatedButton
           ElevatedButton(
             onPressed: () async {
               if (uni == null) {
-                // Thêm
+                // Thêm mới
                 await UniversityService().addUniversity(
                   University(
-                    universityId: _generateNewId(),
+                    // SỬA Ở ĐÂY: Bỏ hoàn toàn universityId khi thêm mới
+                    // universityId: _generateNewId(), // <-- XÓA DÒNG NÀY
                     name: nameCtrl.text,
                     address: addressCtrl.text,
                     contactInfo: contactCtrl.text,
                   ),
                 );
               } else {
-                // Sửa
+                // Sửa (giữ nguyên)
                 await UniversityService().updateUniversity(
                   University(
                     universityId: uni.universityId,
@@ -91,8 +93,10 @@ class _UniversityScreenState extends State<UniversityScreen> {
                   ),
                 );
               }
-              Navigator.pop(context);
-              _loadData();
+              if (mounted) {
+                Navigator.pop(context);
+                _loadData();
+              }
             },
             child: Text("Lưu"),
           ),
@@ -118,10 +122,25 @@ class _UniversityScreenState extends State<UniversityScreen> {
           final uni = universities[index];
           return Card(
             margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            // ...
             child: ListTile(
-              title: Text(uni.name ?? ""),
-              subtitle: Text(uni.address ?? ""),
+              isThreeLine: true, // Cho phép ListTile hiển thị 3 dòng
+              title: Text(
+                uni.name,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Dòng địa chỉ
+                  Text(uni.address ?? "Không có địa chỉ"),
+                  const SizedBox(height: 4), // Thêm một chút khoảng cách
+                  // Dòng thông tin liên hệ
+                  Text(uni.contactInfo ?? "Không có thông tin liên hệ"),
+                ],
+              ),
               trailing: Row(
+// ...
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
