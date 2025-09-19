@@ -1,13 +1,31 @@
 class University {
-  final int universityId;
+  final int? universityId;   // nullable
   final String name;
-  final String address;
-  final String contactInfo;
+  final String? address;
+  final String? contactInfo;
 
   University({
-    required this.universityId,
+    this.universityId,
     required this.name,
-    required this.address,
-    required this.contactInfo,
+    this.address,
+    this.contactInfo,
   });
+
+  factory University.fromJson(Map<String, dynamic> json) {
+    return University(
+      universityId: json['university_id'] as int?,
+      name: json['name'] as String,
+      address: json['address'] as String?,
+      contactInfo: json['contact_info'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (universityId != null) 'university_id': universityId, // chỉ gửi khi update
+      'name': name,
+      'address': address,
+      'contact_info': contactInfo,
+    };
+  }
 }
