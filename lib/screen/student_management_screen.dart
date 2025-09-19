@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/Student.dart';
 import '../services/student_service.dart';
-
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
 
 
 class StudentManagementScreen extends StatefulWidget {
@@ -122,11 +123,38 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     }
   }
 
+  Future<void> _importStudents() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['xlsx'],
+    );
+
+    if (result != null) {
+      File file = File(result.files.single.path!);
+      final imported = await _studentService.importFromExcel(file);
+
+      for (var s in imported) {
+        await _studentService.addStudent(s);
+      }
+
+      _loadStudents();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Quản lý Sinh viên")),
+      appBar: AppBar(
+          title: const Text("Quản lý Sinh viên"),
+          actions: [
+          IconButton(
+          icon: const Icon(Icons.file_upload),
+      tooltip: "Import từ Excel",
+      onPressed: _importStudents,
+    ),
+    ],
+      ),
+
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
