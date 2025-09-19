@@ -1,11 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:student_attendance/screen/ManualCheckInScreen.dart';
+import 'package:student_attendance/screen/QRScannerScreen.dart';
 import '../screen/event_management_screen.dart';
 import '../screen/student_in_event_screen.dart';
 import '../screen/university_management_screen.dart';
 import 'placeholder_screen.dart';
+import '../screen/QRScannerScreen.dart';
+import '../screen/SessionListScreen.dart';
 
-class HomeScreen extends StatelessWidget {
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // Khai báo biến state để lưu ID sinh viên
+  int? _currentStudentId;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  void _fetchUserData() {
+    // Giả lập việc lấy ID của sinh viên đang đăng nhập
+    setState(() {
+      _currentStudentId = 1;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +64,11 @@ class HomeScreen extends StatelessWidget {
         'screen': StudentInEventScreen(eventId: 4, eventTitle: "Sự kiện có SV"),
       },
       {
+        'title': 'Điểm danh',
+        'icon': Icons.fact_check_outlined,
+        'screen': const SessionListScreen(),
+      },
+      {
         'title': 'Báo cáo & Thống kê',
         'icon': Icons.bar_chart,
         'screen': const PlaceholderScreen(title: 'Báo cáo & Thống kê'),
@@ -48,6 +79,25 @@ class HomeScreen extends StatelessWidget {
         'screen': const PlaceholderScreen(title: 'Cài đặt'),
       },
     ];
+
+    List<Map<String, dynamic>> _buildStudentFeatures() {
+      return [
+        {
+          'title': 'Quét QR Check-in',
+          'icon': Icons.qr_code_scanner,
+          'onTap': () {
+            if (_currentStudentId != null) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => QRScannerScreen(studentId: _currentStudentId!)),
+              );
+            }
+          },
+        },
+        {'title': 'Sự kiện của tôi', 'icon': Icons.event, 'screen': const PlaceholderScreen(title: 'Sự kiện của tôi')},
+        {'title': 'Thông tin cá nhân', 'icon': Icons.person, 'screen': const PlaceholderScreen(title: 'Thông tin cá nhân')},
+      ];
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Trang chủ'), centerTitle: true),
@@ -66,11 +116,13 @@ class HomeScreen extends StatelessWidget {
             context,
             title: feature['title'],
             icon: feature['icon'],
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => feature['screen']),
-              );
+            onTap: feature['onTap'] ?? () {
+              if (feature['screen'] != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => feature['screen']),
+                );
+              }
             },
           );
         },
