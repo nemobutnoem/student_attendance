@@ -39,23 +39,31 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
           actions: <Widget>[
             TextButton(
               child: const Text('Hủy'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
+              onPressed: () => Navigator.of(dialogContext).pop(),
             ),
             TextButton(
               child: const Text('Xóa', style: TextStyle(color: Colors.red)),
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
+
+                if (event.id == null) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Lỗi: Sự kiện này không có ID hợp lệ.')),
+                    );
+                  }
+                  return;
+                }
+
                 try {
-                  await apiService.deleteEvent(event.id);
+                  // SỬA LỖI: Thêm dấu '!' để khẳng định id không null
+                  await apiService.deleteEvent(event.id!);
 
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Đã xóa sự kiện thành công!')),
                     );
                   }
-
                   _loadEvents();
 
                 } catch (e) {
@@ -82,6 +90,7 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadEvents,
+            tooltip: 'Tải lại danh sách',
           ),
         ],
       ),
@@ -91,7 +100,7 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          else if (snapshot.hasError) {
+          if (snapshot.hasError) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -109,7 +118,7 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
               ),
             );
           }
-          else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          if (snapshot.hasData && snapshot.data!.isNotEmpty) {
             final events = snapshot.data!;
             return ListView.builder(
               padding: const EdgeInsets.all(8.0),
@@ -119,11 +128,12 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
                 return Card(
                   margin: const EdgeInsets.symmetric(vertical: 8.0),
                   elevation: 3,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: ListTile(
                     title: Text(event.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text(
-                        'Tổ chức bởi: ${event.organizer}\n'
-                            'Từ ${DateFormat('dd/MM/yyyy').format(event.startDate)} đến ${DateFormat('dd/MM/yyyy').format(event.endDate)}'
+                        'Mô tả: ${event.description}\n' // Giả sử bạn có trường description
+                            'Ngày bắt đầu: ${DateFormat('dd/MM/yyyy').format(event.startDate)}'
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -150,9 +160,19 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
               },
             );
           }
-          else {
-            return const Center(child: Text('Không có sự kiện nào.'));
-          }
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Không có sự kiện nào.'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadEvents,
+                  child: const Text('Tải lại'),
+                )
+              ],
+            ),
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(
@@ -166,6 +186,7 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
         },
         backgroundColor: AppColors.accent,
         child: const Icon(Icons.add, color: Colors.white),
+        tooltip: 'Tạo sự kiện mới',
       ),
     );
   }
