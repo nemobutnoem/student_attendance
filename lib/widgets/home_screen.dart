@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:student_attendance/screen/student_management_screen.dart';
 import '../screen/event_management_screen.dart';
 import '../screen/student_in_event_screen.dart';
+import '../screen/event_session_management_screen.dart';
 import 'placeholder_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -29,7 +30,7 @@ class HomeScreen extends StatelessWidget {
       {
         'title': 'Quản lý Phiên',
         'icon': Icons.access_time,
-        'screen': const PlaceholderScreen(title: 'Quản lý Phiên'),
+        'screen': const EventSessionManagementScreen(),
       },
       {
         'title': 'SV trong Sự kiện',
