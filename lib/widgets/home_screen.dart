@@ -3,6 +3,7 @@ import 'package:student_attendance/screen/student_management_screen.dart';
 import '../screen/event_management_screen.dart';
 import '../screen/student_in_event_screen.dart';
 import '../screen/event_session_management_screen.dart';
+import '../screen/university_management_screen.dart';
 import 'placeholder_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -25,7 +26,7 @@ class HomeScreen extends StatelessWidget {
       {
         'title': 'Quản lý Trường/ĐV',
         'icon': Icons.school,
-        'screen': const PlaceholderScreen(title: 'Quản lý Trường/Đơn vị'),
+        'screen': const UniversityScreen(),
       },
       {
         'title': 'Quản lý Phiên',
