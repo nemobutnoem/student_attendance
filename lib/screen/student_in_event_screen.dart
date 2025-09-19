@@ -57,7 +57,7 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('SV trong: ${widget.eventTitle}'),
+        title: Text('SV tham gia sự kiện'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -90,15 +90,23 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                     "Sự kiện: ${student.event?['title'] ?? 'Không có'}\n"
                         "Trạng thái: ${student.status}",
                   ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) => _handleMenuSelection(value, student),
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(value: "attended", child: Text("Đánh dấu: Đã tham dự")),
-                      const PopupMenuItem(value: "cancelled", child: Text("Đánh dấu: Đã hủy")),
-                      const PopupMenuDivider(),
-                      const PopupMenuItem(
-                        value: "delete",
-                        child: Text("Xóa khỏi sự kiện", style: TextStyle(color: Colors.red)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.check_circle, color: Colors.green),
+                        tooltip: "Đánh dấu: Đã tham dự",
+                        onPressed: () => _handleMenuSelection("attended", student),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.cancel, color: Colors.orange),
+                        tooltip: "Đánh dấu: Đã hủy",
+                        onPressed: () => _handleMenuSelection("cancelled", student),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        tooltip: "Xóa khỏi sự kiện",
+                        onPressed: () => _handleMenuSelection("delete", student),
                       ),
                     ],
                   ),
@@ -179,10 +187,6 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                               await _service.addStudentToEvent(selectedEventId!, id);
                               Navigator.pop(context); // đóng dialog
 
-                              if (selectedEventId == widget.eventId) {
-                                // Nếu thêm vào đúng sự kiện đang xem → reload list
-                                _loadData();
-                              }
 
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(

@@ -67,7 +67,7 @@ class StudentInEventService {
       })
           .select('''
           id, student_id, status,
-          student(student_id, name, email),
+          students(student_id, name, email),
           event(event_id, title)
         ''') // đồng bộ cách viết với fetchStudentsInEvent
           .single();
@@ -114,14 +114,24 @@ class StudentInEventService {
 
   /// Import danh sách sinh viên vào sự kiện
   Future<void> importStudentsToEvent(int eventId, List<int> studentIds) async {
-    final rows = studentIds.map((id) => {
-      'event_id': eventId,
-      'student_id': id,
-      'status': 'registered',
-    }).toList();
+    try {
+      final rows = studentIds.map((sid) => {
+        'event_id': eventId,
+        'student_id': sid,
+        'status': 'registered',
+      }).toList();
 
-    await _supabase.from(_tableName).insert(rows);
+      final response = await _supabase
+          .from('student_in_event')
+          .insert(rows);
+
+      print('✅ Import thành công: $response');
+    } catch (e) {
+      print('❌ Lỗi import sinh viên: $e');
+      throw Exception('Không thể import sinh viên vào sự kiện.');
+    }
   }
+
 
   /// Lấy danh sách sự kiện còn hạn (end_date >= NOW)
   Future<List<Map<String, dynamic>>> fetchActiveEvents() async {
