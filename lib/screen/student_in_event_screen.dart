@@ -57,15 +57,14 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('SV tham gia sự kiện'),
+        title: const Text('SV tham gia sự kiện'),
         actions: [
           IconButton(
             icon: const Icon(Icons.file_upload),
             onPressed: () async {
               try {
-                // Gọi hàm import Excel
-                await _service.importStudentsFromExcel(); // hàm bulk import bạn đã viết
-                _loadData(); // refresh sau khi import
+                await _service.importStudentsFromExcel();
+                _loadData();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Import Excel thành công!')),
                 );
@@ -91,7 +90,9 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
           } else if (snapshot.hasError) {
             return Center(child: Text("Lỗi: ${snapshot.error}"));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("Chưa có sinh viên nào trong sự kiện này."));
+            return const Center(
+              child: Text("Chưa có sinh viên nào trong sự kiện này."),
+            );
           }
 
           final students = snapshot.data!;
@@ -112,7 +113,7 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                       Expanded(
                         child: Text(
                           student.student?.studentCode ?? 'Null',
-                          overflow: TextOverflow.ellipsis, // tránh bị xuống dòng
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -150,13 +151,11 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final controller = TextEditingController();
-          int? selectedEventId; // sự kiện được chọn
+          int? selectedEventId;
           List<Map<String, dynamic>> events = [];
 
           try {
-            // Gọi API lấy danh sách sự kiện đang tồn tại
             events = await _service.fetchActiveEvents();
-            // fetchActiveEvents: tự viết trong service, query event có end_date >= NOW()
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text("Lỗi khi tải sự kiện: $e")),
@@ -167,43 +166,45 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
           await showDialog(
             context: context,
             builder: (context) {
-              return StatefulBuilder( // cần StatefulBuilder để dropdown setState
+              return StatefulBuilder(
                 builder: (context, setState) {
                   return AlertDialog(
                     title: const Text("Thêm sinh viên vào sự kiện"),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Nhập mã sinh viên
-                        TextField(
-                          controller: controller,
-                          decoration: const InputDecoration(
-                            labelText: "Nhập mã sinh viên",
-                          ),
-                          keyboardType: TextInputType.number,
+                    content: SingleChildScrollView(
+                      child: SizedBox(
+                        width: double.maxFinite,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextField(
+                              controller: controller,
+                              decoration: const InputDecoration(
+                                labelText: "Nhập mã sinh viên",
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                            const SizedBox(height: 20),
+                            DropdownButtonFormField<int>(
+                              value: selectedEventId,
+                              decoration: const InputDecoration(
+                                labelText: "Chọn sự kiện",
+                                border: OutlineInputBorder(),
+                              ),
+                              items: events.map((event) {
+                                return DropdownMenuItem<int>(
+                                  value: event['event_id'],
+                                  child: Text(event['title']),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedEventId = value;
+                                });
+                              },
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 20),
-
-                        // Dropdown chọn sự kiện
-                        DropdownButtonFormField<int>(
-                          value: selectedEventId,
-                          decoration: const InputDecoration(
-                            labelText: "Chọn sự kiện",
-                            border: OutlineInputBorder(),
-                          ),
-                          items: events.map((event) {
-                            return DropdownMenuItem<int>(
-                              value: event['event_id'],
-                              child: Text(event['title']),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedEventId = value;
-                            });
-                          },
-                        ),
-                      ],
+                      ),
                     ),
                     actions: [
                       TextButton(
@@ -215,10 +216,10 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                           final code = controller.text.trim();
                           if (code.isNotEmpty && selectedEventId != null) {
                             try {
-                              await _service.addStudentToEvent(selectedEventId!, code);
-                              Navigator.pop(context); // đóng dialog
+                              await _service.addStudentToEvent(
+                                  selectedEventId!, code);
+                              Navigator.pop(context);
                               _loadData();
-
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text("Thêm sinh viên thành công!"),
@@ -231,7 +232,6 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                             }
                           }
                         },
-
                         child: const Text("Thêm"),
                       ),
                     ],

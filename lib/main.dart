@@ -15,7 +15,6 @@ Future<void> main() async {
 
   runApp(const MyApp());
 
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -25,7 +24,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Quản lý Sự kiện Sinh viên',
-      theme: buildAppTheme(),
+      theme: ThemeData(
+        useMaterial3: false, // tắt M3 về M2
+      ),
       home: const HomeScreen(),
       debugShowCheckedModeBanner: false,
     );
