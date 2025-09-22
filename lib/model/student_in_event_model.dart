@@ -1,36 +1,34 @@
 class StudentInEvent {
   final int? id;
-  final int eventId;
-  final int studentId;
-  final String status;
+  final int? eventId;
+  final int? studentId;
+  final String? status;
   final Student? student;
   final Map<String, dynamic>? event;
 
-
   StudentInEvent({
     this.id,
-    required this.eventId,
-    required this.studentId,
-    required this.status,
+    this.eventId,
+    this.studentId,
+    this.status,
     this.student,
     this.event,
   });
 
   factory StudentInEvent.fromJson(Map<String, dynamic> json) {
     return StudentInEvent(
-      id: json['id'] as int?,
-      status: json['status'] as String,
-      studentId: json['student_id'] as int,
-      eventId: (json['event_idR'] ?? json['event']?['event_id']) as int,
-      student: (json['students'] != null && json['students'] is Map<String, dynamic>)
-          ? Student.fromJson(json['students'] as Map<String, dynamic>)
+      id: json['student_in_event_id'] as int?,
+      status: json['status'] as String?,
+      studentId: json['student_id'] as int?,
+      eventId: json['event_id'] as int?, // ✅ fix
+      student: (json['student'] != null && json['student'] is Map<String, dynamic>)
+          ? Student.fromJson(json['student'] as Map<String, dynamic>) // ✅ fix
           : null,
       event: (json['event'] != null && json['event'] is Map<String, dynamic>)
           ? json['event'] as Map<String, dynamic>
           : null,
     );
   }
-
 
   Map<String, dynamic> toJson() {
     return {
@@ -44,26 +42,33 @@ class StudentInEvent {
 }
 
 class Student {
-  final int studentId;
-  final String name;
-  final String email;
-  final String studentCode;
-
+  final int? studentId;
+  final String? name;
+  final String? email;
+  final String? studentCode;
 
   Student({
-    required this.studentId,
-    required this.name,
-    required this.email,
-    required this.studentCode,
-
+    this.studentId,
+    this.name,
+    this.email,
+    this.studentCode,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
     return Student(
-      studentId: json['student_id'] as int,
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      studentCode: json['student_code'] ?? '',
+      studentId: json['student_id'] as int?,
+      name: json['name'] as String?,
+      email: json['email'] as String?,
+      studentCode: json['student_code'] as String?, // ✅ map đúng
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'student_id': studentId,
+      'name': name,
+      'email': email,
+      'student_code': studentCode,
+    };
   }
 }
