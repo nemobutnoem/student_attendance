@@ -11,7 +11,6 @@ import '../screen/event_session_management_screen.dart';
 import '../screen/reporting_screen.dart';
 import '../screen/setting_screen.dart';
 
-
 class HomeScreen extends StatefulWidget {
   final String role;   // admin | organizer | student
   final int userId;    // id user sau khi login
@@ -27,9 +26,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
-  // ✅ Danh sách menu cho từng role
-  List<Map<String, dynamic>> _adminFeatures = [
+  // Danh sách menu cho từng role
+  List<Map<String, dynamic>> get _adminFeatures => [
     {
       'title': 'Quản lý Sự kiện',
       'icon': Icons.event_note,
@@ -72,21 +70,26 @@ class _HomeScreenState extends State<HomeScreen> {
     },
   ];
 
-  List<Map<String, dynamic>> _organizerFeatures = [
+  List<Map<String, dynamic>> get _organizerFeatures => [
     {
-      'title': 'Quản lý Sự kiện',
+      'title': 'Quản lý Sự kiện của tôi',
       'icon': Icons.event_note,
-      'screen': const EventManagementScreen(),
+      'screen': const EventManagementScreen(), // Trong màn EventManagementScreen, chỉ query event organizer_id = userId
     },
     {
-      'title': 'Quản lý Phiên',
+      'title': 'Quản lý Phiên của tôi',
       'icon': Icons.access_time,
-      'screen': const EventSessionManagementScreen(),
+      'screen': const EventSessionManagementScreen(), // Cũng filter theo event của organizer
     },
     {
       'title': 'Điểm danh',
       'icon': Icons.fact_check_outlined,
       'screen': const SessionListScreen(),
+    },
+    {
+      'title': 'Cài đặt',
+      'icon': Icons.settings,
+      'screen': const SettingScreen(),
     },
   ];
 
@@ -113,11 +116,16 @@ class _HomeScreenState extends State<HomeScreen> {
       'icon': Icons.person,
       'screen': const PlaceholderScreen(title: 'Thông tin cá nhân'),
     },
+    {
+      'title': 'Cài đặt',
+      'icon': Icons.settings,
+      'screen': const SettingScreen(),
+    },
   ];
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Chọn menu theo role
+    // Chọn menu theo role
     List<Map<String, dynamic>> features;
     if (widget.role == "admin") {
       features = _adminFeatures;
