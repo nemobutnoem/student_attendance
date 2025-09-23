@@ -21,7 +21,7 @@ class AuthService {
     final userData = await _supabase
         .from('app_user')
         .select('user_id, role')
-        .eq('auth_id', userId) // auth_id mapping với supabase user id
+        .eq('auth_id', userId)
         .single();
 
     if (userData == null) {
@@ -37,8 +37,32 @@ class AuthService {
 
     return {
       'id': userData['user_id'],
-      'role': userData['role'], // admin | organizer | student
-      'name': studentData?['name'], // Có thể null nếu không phải student
+      'role': userData['role'],
+      'name': studentData?['name'],
+    };
+  }
+
+  /// Đăng ký tài khoản sinh viên (Sign Up)
+  Future<Map<String, dynamic>> signUpStudent(String email, String password) async {
+    // 1. Tạo tài khoản trên Supabase Auth
+    final response = await _supabase.auth.signUp(email: email, password: password);
+    final authUser = response.user;
+    if (authUser == null) throw Exception("Đăng ký thất bại!");
+
+    // 2. Insert vào bảng app_user với role student
+    final userRecord = await _supabase
+        .from('app_user')
+        .insert({
+      'auth_id': authUser.id,
+      'email': email,
+      'role': 'student',
+    })
+        .select()
+        .single();
+
+    return {
+      'role': userRecord['role'],
+      'id': userRecord['user_id'],
     };
   }
 
