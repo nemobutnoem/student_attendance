@@ -48,7 +48,7 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
                 try {
-                  await apiService.deleteEvent(event.id);
+                  await apiService.deleteEvent(event.id!);
 
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

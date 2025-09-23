@@ -7,7 +7,9 @@ import '../screen/university_management_screen.dart';
 import 'placeholder_screen.dart';
 import '../screen/QRScannerScreen.dart';
 import '../screen/SessionListScreen.dart';
-
+import 'package:student_attendance/screen/student_management_screen.dart';
+import '../screen/event_session_management_screen.dart';
+import '../screen/reporting_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
       {
         'title': 'Quản lý Sinh viên',
         'icon': Icons.people,
-        'screen': const PlaceholderScreen(title: 'Quản lý Sinh viên'),
+        'screen': const StudentManagementScreen(),
       },
       {
         'title': 'Quản lý Trường/ĐV',
@@ -55,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
       {
         'title': 'Quản lý Phiên',
         'icon': Icons.access_time,
-        'screen': const PlaceholderScreen(title: 'Quản lý Phiên'),
+        'screen': const EventSessionManagementScreen(),
       },
       {
         'title': 'SV trong Sự kiện',
@@ -71,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
       {
         'title': 'Báo cáo & Thống kê',
         'icon': Icons.bar_chart,
-        'screen': const PlaceholderScreen(title: 'Báo cáo & Thống kê'),
+        'screen': const ReportingScreen(),
       },
       {
         'title': 'Cài đặt',

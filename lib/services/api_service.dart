@@ -2,85 +2,82 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/event_model.dart';
 
 class ApiService {
-  // SỬA Ở ĐÂY: Xóa dòng `final SupabaseClient _supabase = Supabase.instance.client;`
-
-  // Thay vào đó, tạo một getter để lấy client một cách an toàn
-  SupabaseClient get _supabase => Supabase.instance.client;
-
-  static const String _tableName = 'event';
-  static const String _idColumn = 'event_id';
+  final supabase = Supabase.instance.client;
 
   Future<List<Event>> fetchEvents() async {
-    print('Đang lấy dữ liệu từ Supabase, bảng: $_tableName');
     try {
-      final List<dynamic> data = await _supabase // <-- Dùng getter
-          .from(_tableName)
-          .select()
-          .order('start_date', ascending: false);
-
-      List<Event> events = data.map((dynamic item) => Event.fromJson(item)).toList();
-      print('Lấy dữ liệu Supabase thành công, số sự kiện: ${events.length}');
+      // SỬA: Dùng đúng tên bảng 'event' và sắp xếp theo 'start_date'
+      final response = await supabase.from('event').select().order('start_date', ascending: false);
+      final List<Event> events = (response as List).map((data) => Event.fromJson(data)).toList();
       return events;
     } catch (e) {
-      print('Đã xảy ra lỗi khi lấy dữ liệu Supabase: $e');
-      throw Exception('Lỗi khi tải dữ liệu sự kiện từ Supabase.');
+      print('Lỗi khi tải sự kiện: $e');
+      throw Exception('Không thể tải danh sách sự kiện.');
     }
   }
 
-  Future<Event> createEvent(Event event) async {
-    print('Đang tạo sự kiện mới trên Supabase, bảng: $_tableName');
+  Future<List<Map<String, dynamic>>> fetchStudentDataForEvent(int eventId) async {
     try {
-      final List<dynamic> response = await _supabase // <-- Dùng getter
-          .from(_tableName)
-          .insert(event.toJson())
-          .select();
-
-      print('Tạo sự kiện trên Supabase thành công!');
-      return Event.fromJson(response.first);
+      // SỬA: Truy vấn đúng theo schema của bạn
+      final response = await supabase
+          .from('student_in_event') // Sửa tên bảng
+          .select('*, student(*, university(*))')
+          .eq('event_id', eventId);
+      return response as List<Map<String, dynamic>>;
     } catch (e) {
-      print('Lỗi khi tạo sự kiện trên Supabase: $e');
-      throw Exception('Lỗi khi tạo sự kiện.');
+      print('Lỗi khi tải dữ liệu sinh viên: $e');
+      throw Exception('Không thể tải dữ liệu sinh viên cho sự kiện.');
     }
   }
 
-  Future<Event> updateEvent(Event event) async {
+  Future<List<Map<String, dynamic>>> fetchAllAttendanceForStats() async {
+    try {
+      // SỬA: Truy vấn thống kê đúng theo schema của bạn
+      final response = await supabase
+          .from('student_in_event') // Sửa tên bảng
+          .select('''
+            event ( event_id, title, start_date ),
+            student ( student_id, name, student_code, university ( university_id, name ) )
+          ''');
+
+      return response as List<Map<String, dynamic>>;
+    } catch (e) {
+      print('LỖI THỐNG KÊ CHI TIẾT: $e');
+      throw Exception('Không thể tải dữ liệu thống kê. Vui lòng kiểm tra lại quyền truy cập (RLS) trên Supabase.');
+    }
+  }
+
+  Future<void> createEvent(Event event) async {
+    try {
+      // SỬA: Dùng đúng tên bảng 'event'
+      await supabase.from('event').insert(event.toJson());
+    } catch (e) {
+      print('Lỗi khi tạo sự kiện: $e');
+      throw Exception('Tạo sự kiện thất bại.');
+    }
+  }
+
+  Future<void> updateEvent(Event event) async {
     if (event.id == null) {
-      throw Exception('Không thể cập nhật sự kiện vì thiếu ID.');
+      throw Exception('Không thể cập nhật sự kiện không có ID.');
     }
-    print('Đang cập nhật sự kiện trên Supabase, ID: ${event.id}');
     try {
-      final List<dynamic> response = await _supabase // <-- Dùng getter
-          .from(_tableName)
-          .update(event.toJson())
-          .eq(_idColumn, event.id!)
-          .select();
-
-      if (response.isEmpty) {
-        throw Exception('Không tìm thấy sự kiện với ID ${event.id} để cập nhật.');
-      }
-      print('Cập nhật sự kiện trên Supabase thành công!');
-      return Event.fromJson(response.first);
+      // SỬA: Dùng đúng tên bảng 'event' và khóa chính 'event_id'
+      await supabase.from('event').update(event.toJson()).eq('event_id', event.id!);
     } catch (e) {
-      print('Lỗi khi cập nhật sự kiện trên Supabase: $e');
-      throw Exception('Lỗi khi cập nhật sự kiện.');
+      print('Lỗi khi cập nhật sự kiện: $e');
+      throw Exception('Cập nhật sự kiện thất bại.');
     }
   }
 
-  Future<void> deleteEvent(int? eventId) async {
-    if (eventId == null) {
-      throw Exception('ID của sự kiện không được null khi xóa.');
-    }
-    print('Đang xóa sự kiện trên Supabase, ID: $eventId');
+  Future<void> deleteEvent(int eventId) async {
     try {
-      await _supabase // <-- Dùng getter
-          .from(_tableName)
-          .delete()
-          .eq(_idColumn, eventId);
-
-      print('Xóa sự kiện trên Supabase thành công!');
+      // SỬA: Xóa từ các bảng có tên đúng
+      await supabase.from('student_in_event').delete().eq('event_id', eventId);
+      await supabase.from('event').delete().eq('event_id', eventId);
     } catch (e) {
-      print('Lỗi khi xóa sự kiện trên Supabase: $e');
-      throw Exception('Lỗi khi xóa sự kiện.');
+      print('Lỗi khi xóa sự kiện: $e');
+      throw Exception('Xóa sự kiện thất bại.');
     }
   }
 }

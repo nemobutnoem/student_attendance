@@ -77,8 +77,8 @@ class _ManualCheckinScreenState extends State<ManualCheckinScreen> {
           }
 
           final students = snapshot.data!;
-          final checkedInStudents = students.where((s) => s['checkin_status'] == 'Đã Check-in').toList();
-          final notCheckedInStudents = students.where((s) => s['checkin_status'] == 'Chưa Check-in').toList();
+          final checkedInStudents = students.where((s) => s['checked_in'] == true).toList();
+          final notCheckedInStudents = students.where((s) => s['checked_in'] == false).toList();
 
           return ListView(
             padding: const EdgeInsets.all(8.0),
@@ -108,8 +108,9 @@ class _ManualCheckinScreenState extends State<ManualCheckinScreen> {
   Widget _buildStudentTile(Map<String, dynamic> student, bool isCheckedIn) {
     return Card(
       child: ListTile(
-        title: Text(student['student_name'] ?? 'Không có tên'),
-        subtitle: Text('MSSV: ${student['student_code'] ?? 'N/A'}'),
+        title: Text(student['name'] ?? 'Không có tên'),
+        subtitle: Text('MSSV: ${student['student_code'] ?? 'N/A'}\n'
+            'Trạng thái: ${student['checked_in'] == true ? 'Đã Check-in' : 'Chưa Check-in'}'),
         trailing: isCheckedIn
             ? Icon(Icons.check_circle, color: Colors.green)
             : ElevatedButton(
