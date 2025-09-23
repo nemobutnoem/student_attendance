@@ -10,6 +10,8 @@ import '../screen/SessionListScreen.dart';
 import 'package:student_attendance/screen/student_management_screen.dart';
 import '../screen/event_session_management_screen.dart';
 import '../screen/reporting_screen.dart';
+import '../screen/settings_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -78,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
       {
         'title': 'Cài đặt',
         'icon': Icons.settings,
-        'screen': const PlaceholderScreen(title: 'Cài đặt'),
+        'screen': const SettingsScreen(),
       },
     ];
 

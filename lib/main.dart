@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-// SỬA Ở ĐÂY: Thêm 'screens/' vào đường dẫn import
+import 'package:provider/provider.dart';
+import '../theme_provider.dart';
 import '../widgets/home_screen.dart';
+import 'app_theme.dart'; // Import file app_theme.dart
 
-Future<void> initSupabase() async {
-  await Supabase.initialize(
-    url: 'https://vxxjfbvboktsxqccqrqf.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eGpmYnZib2t0c3hxY2NxcnFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxNzgyODYsImV4cCI6MjA3Mzc1NDI4Nn0.B-2UN9d9V9pzU0Zft4WavBVfk2X6SZje2Xuw8Z6D_Oo',
+void main() {
+  runApp(
+    // BƯỚC 1: Cung cấp ThemeProvider cho toàn bộ ứng dụng
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: const MyApp(),
+    ),
   );
-}
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await initSupabase();
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -22,13 +19,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false, // Tắt banner "Debug"
-      title: 'Student Attendance App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const HomeScreen(),
+    // BƯỚC 2: "Lắng nghe" sự thay đổi của ThemeProvider
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          title: 'Student Attendance',
+          debugShowCheckedModeBanner: false,
+
+          // BƯỚC 3: Áp dụng theme dựa trên lựa chọn của người dùng
+          theme: buildAppTheme(), // Theme cho chế độ sáng
+          darkTheme: buildAppDarkTheme(), // Theme cho chế độ tối
+          themeMode: themeProvider.themeMode, // Quyết định theme nào sẽ được hiển thị
+
+          home: const HomeScreen(),
+        );
+      },
     );
   }
 }

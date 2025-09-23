@@ -3,7 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import '../screen/login_screen.dart';
 import '../theme_provider.dart'; // SỬA: Import ThemeProvider
 
 class SettingsScreen extends StatefulWidget {
@@ -22,7 +22,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _loadAppVersion();
   }
-
+  Future<void> _logout(BuildContext context) async {
+    await Supabase.instance.client.auth.signOut();
+    // Sau khi logout, quay về LoginScreen và remove hết các màn hình trước đó
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+    );
+  }
   Future<void> _loadAppVersion() async {
     final packageInfo = await PackageInfo.fromPlatform();
     // SỬA: Kiểm tra `mounted` để tránh lỗi
@@ -149,8 +156,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ListTile(
             leading: Icon(Icons.logout, color: Colors.red.shade700),
-            title: Text('Đăng xuất', style: TextStyle(color: Colors.red.shade700)),
-            onTap: _handleLogout,
+            title: Text(
+              'Đăng xuất',
+              style: TextStyle(color: Colors.red.shade700),
+            ),
+            // Khi người dùng nhấn vào, gọi hàm _logout
+            onTap: () => _logout(context),
           ),
           const Divider(height: 32),
 
