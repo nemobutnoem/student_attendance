@@ -9,6 +9,8 @@ import '../screen/SessionListScreen.dart';
 import 'package:student_attendance/screen/student_management_screen.dart';
 import '../screen/event_session_management_screen.dart';
 import '../screen/reporting_screen.dart';
+import '../screen/setting_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   final String role;   // admin | organizer | student
@@ -66,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
     {
       'title': 'Cài đặt',
       'icon': Icons.settings,
-      'screen': const PlaceholderScreen(title: 'Cài đặt'),
+      'screen': const SettingScreen(),
     },
   ];
 
