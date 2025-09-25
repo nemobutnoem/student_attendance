@@ -44,7 +44,7 @@ class _EventListScreenState extends State<EventListScreen> {
 
       final response = await _service.supabase
           .from('event')
-          .select(''', 
+          .select('''
           event_id,
           title,
           start_date,
@@ -73,8 +73,7 @@ class _EventListScreenState extends State<EventListScreen> {
     }
   }
 
-
-  Future<void> _registerEvent(int eventId) async {
+  Future<void> _registerEvent(int index, int eventId) async {
     try {
       final studentRow = await _service.supabase
           .from('student')
@@ -107,6 +106,11 @@ class _EventListScreenState extends State<EventListScreen> {
       }
 
       await _service.registerEvent(studentId, eventId);
+
+      // ✅ Cập nhật UI ngay lập tức
+      setState(() {
+        _events[index]['registered'] = true;
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Đăng ký thành công!")),
@@ -141,9 +145,13 @@ class _EventListScreenState extends State<EventListScreen> {
                 "Bắt đầu: ${ev['start_date']}\nKết thúc: ${ev['end_date']}",
               ),
               trailing: ev['registered'] == true
-                  ? const Chip(label: Text("Đã đăng ký"), backgroundColor: Colors.greenAccent)
+                  ? const Chip(
+                label: Text("Đã đăng ký"),
+                backgroundColor: Colors.greenAccent,
+              )
                   : ElevatedButton(
-                onPressed: () => _registerEvent(ev['event_id']),
+                onPressed: () =>
+                    _registerEvent(index, ev['event_id']),
                 child: const Text("Đăng ký"),
               ),
             ),
