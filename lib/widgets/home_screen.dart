@@ -35,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
     {
       'title': 'Quản lý Sự kiện',
       'icon': Icons.event_note,
-      'screen': const EventManagementScreen(),
+      'screen': EventManagementScreen(role: widget.role, userId: widget.userId),
     },
     {
       'title': 'Quản lý Sinh viên',
@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     {
       'title': 'Quản lý Phiên',
       'icon': Icons.access_time,
-      'screen': const EventSessionManagementScreen(),
+      'screen': EventSessionManagementScreen(role: widget.role, userId: widget.userId),
     },
     {
       'title': 'SV trong Sự kiện',
@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
     {
       'title': 'Báo cáo & Thống kê',
       'icon': Icons.bar_chart,
-      'screen': const ReportingScreen(),
+      'screen': ReportingScreen(role: widget.role, userId: widget.userId),
     },
     {
       'title': 'Cài đặt',
@@ -78,12 +78,11 @@ class _HomeScreenState extends State<HomeScreen> {
     {
       'title': 'Quản lý Sự kiện của tôi',
       'icon': Icons.event_note,
-      'screen': const EventManagementScreen(), // Trong EventManagementScreen, chỉ query event organizer_id = userId
-    },
+      'screen': EventManagementScreen(role: widget.role, userId: widget.userId),    },
     {
       'title': 'Quản lý Phiên của tôi',
       'icon': Icons.access_time,
-      'screen': const EventSessionManagementScreen(), // Cũng filter theo event của organizer
+      'screen':EventSessionManagementScreen(role: widget.role, userId: widget.userId), // Cũng filter theo event của organizer
     },
     {
       'title': 'Điểm danh',

@@ -6,9 +6,14 @@ import '../model/event_model.dart';
 import '../services/api_service.dart';
 
 class CreateEditEventScreen extends StatefulWidget {
-  final Event? event; // Nếu event khác null, đây là màn hình chỉnh sửa
+  final Event? event;
+  final int userId;
 
-  const CreateEditEventScreen({super.key, this.event});
+  const CreateEditEventScreen({
+    super.key,
+    this.event,
+    required this.userId,
+  });
 
   @override
   State<CreateEditEventScreen> createState() => _CreateEditEventScreenState();
@@ -24,10 +29,12 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
 
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
+  late final bool _isEditMode;
 
   @override
   void initState() {
     super.initState();
+    _isEditMode = widget.event != null;
     _titleController = TextEditingController(text: widget.event?.title ?? '');
     _descriptionController = TextEditingController(text: widget.event?.description ?? '');
     _organizerController = TextEditingController(text: widget.event?.organizer ?? '');
@@ -61,10 +68,9 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
     }
   }
 
-  void _saveForm() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+  Future<void> _saveForm() async {
+    final isFormValid = _formKey.currentState?.validate() ?? false;
+    if (!isFormValid) return;
     if (_startDate == null || _endDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng chọn ngày bắt đầu và kết thúc')),
@@ -72,54 +78,58 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() { _isLoading = true; });
+
+    final Map<String, dynamic> data = {
+      'title': _titleController.text,
+      'description': _descriptionController.text,
+      'organizer': _organizerController.text,
+      'start_date': _startDate!.toIso8601String(),
+      'end_date': _endDate!.toIso8601String(),
+    };
 
     try {
-      final eventToSave = Event(
-        id: widget.event?.id,
-        title: _titleController.text,
-        description: _descriptionController.text,
-        organizer: _organizerController.text,
-        startDate: _startDate!,
-        endDate: _endDate!,
-      );
-
-      if (widget.event == null) {
-        await _apiService.createEvent(eventToSave);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tạo sự kiện thành công!')),
-        );
-      } else {
-        await _apiService.updateEvent(eventToSave);
+      if (_isEditMode) {
+        // CHẾ ĐỘ CẬP NHẬT
+        // SỬA: Dùng `widget.event!.id!` là chính xác vì model đã được chuẩn hóa.
+        await _apiService.updateEvent(widget.event!.id!, data);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cập nhật sự kiện thành công!')),
         );
+      } else {
+        // CHẾ ĐỘ TẠO MỚI
+        // Dòng này sẽ fix lỗi RLS của bạn.
+        data['user_id'] = widget.userId;
+        await _apiService.createEvent(data);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tạo sự kiện thành công!')),
+        );
       }
 
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
       }
-
     } catch (e) {
+      if (!mounted) return;
+      final errorMessage = e.toString().replaceFirst("Exception: ", "");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã xảy ra lỗi: $e')),
+        SnackBar(content: Text('Đã xảy ra lỗi: $errorMessage')),
       );
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() { _isLoading = false; });
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Phần build giữ nguyên, không cần thay đổi.
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.event == null ? 'Tạo sự kiện mới' : 'Chỉnh sửa sự kiện'),
+        title: Text(_isEditMode ? 'Chỉnh sửa sự kiện' : 'Tạo sự kiện mới'),
       ),
       body: Form(
         key: _formKey,
@@ -176,10 +186,11 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                   : ElevatedButton(
                 onPressed: _saveForm,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
+                  backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('LƯU SỰ KIỆN', style: TextStyle(color: Colors.white)),
+                child: Text(_isEditMode ? 'CẬP NHẬT' : 'LƯU SỰ KIỆN', style: const TextStyle(color: Colors.white, fontSize: 16)),
               ),
             ],
           ),
