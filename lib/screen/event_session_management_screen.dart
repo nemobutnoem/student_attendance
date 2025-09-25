@@ -9,8 +9,15 @@ import 'event_session_form_screen.dart';
 
 class EventSessionManagementScreen extends StatefulWidget {
   final int? eventId;
+  final String role;
+  final int userId;
 
-  const EventSessionManagementScreen({super.key, this.eventId});
+  const EventSessionManagementScreen({
+    super.key,
+    this.eventId,
+    required this.role,
+    required this.userId,
+  });
 
   @override
   State<EventSessionManagementScreen> createState() => _EventSessionManagementScreenState();
@@ -36,26 +43,49 @@ class _EventSessionManagementScreenState extends State<EventSessionManagementScr
 
   Future<void> _loadEvents() async {
     try {
-      events = await apiService.fetchEvents();
-      if (widget.eventId != null) {
-        selectedEvent = events.firstWhere(
-              (event) => event.id == widget.eventId,
-          orElse: () => events.isNotEmpty ? events.first : throw Exception('Không có sự kiện nào'),
-        );
-      } else if (events.isNotEmpty) {
-        selectedEvent = events.first;
+      // 1. Gọi API để lấy danh sách sự kiện
+      events = await apiService.fetchEvents(
+        role: widget.role,
+        userId: widget.userId,
+      );
+
+      // SỬA: Tách logic tìm kiếm để tránh lỗi kiểu dữ liệu
+      Event? foundEvent;
+      // Chỉ tìm khi danh sách không rỗng
+      if (events.isNotEmpty) {
+        if (widget.eventId != null) {
+          // Thử tìm event theo ID, nếu không thấy sẽ là null
+          try {
+            foundEvent = events.firstWhere((event) => event.id == widget.eventId);
+          } catch (e) {
+            foundEvent = null; // Không tìm thấy
+          }
+        }
+        // Nếu không tìm thấy event theo ID, hoặc không có ID để tìm, thì lấy event đầu tiên
+        selectedEvent = foundEvent ?? events.first;
+      } else {
+        // Nếu danh sách rỗng, không có event nào được chọn
+        selectedEvent = null;
       }
+
+
       if (mounted) setState(() {});
     } catch (e) {
       print('Lỗi khi tải danh sách sự kiện: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải sự kiện: $e')),
+        );
+      }
     }
   }
+
 
   void _loadSessions() {
     if (selectedEvent?.id != null) {
       setState(() {
         _futureSessions = sessionService.fetchEventSessions(
-          eventId: selectedEvent?.id,
+          eventId: selectedEvent!.id!, // Dùng ! vì đã kiểm tra null
         );
       });
     } else {
