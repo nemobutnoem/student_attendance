@@ -14,10 +14,10 @@ class StudentInEventService {
   Future<List<StudentInEvent>> fetchAllStudentsInEvents() async {
     try {
       final data = await _supabase.from(_tableName).select('''
-        student_in_event_id, status, event_id, student_id,
-        student(student_id, student_code, name),
-        event(event_id, title)
-      ''');
+  student_in_event_id, status, event_id, student_id,
+  student!fk_student_in_event_student(student_id, student_code, name),
+  event(event_id, title)
+''');
 
       print('🔥 Raw data tất cả sự kiện: $data');
       return data.map<StudentInEvent>((item) => StudentInEvent.fromJson(item)).toList();
@@ -27,7 +27,7 @@ class StudentInEventService {
     }
   }
 
-  /// Lấy danh sách sinh viên trong 1 sự kiện cụ thể
+  /// Lấy danh sách sinh viên
   Future<List<StudentInEvent>> fetchStudentsByEvent(int eventId) async {
     try {
       final data = await _supabase.from(_tableName).select('''
