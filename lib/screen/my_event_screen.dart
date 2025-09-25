@@ -1,0 +1,85 @@
+import 'package:flutter/material.dart';
+import '../services/student_service.dart';
+
+class MyEventScreen extends StatefulWidget {
+  final int userId;
+
+  const MyEventScreen({super.key, required this.userId});
+
+  @override
+  State<MyEventScreen> createState() => _MyEventScreenState();
+}
+
+class _MyEventScreenState extends State<MyEventScreen> {
+  final StudentService _service = StudentService();
+  bool _loading = true;
+  List<Map<String, dynamic>> _events = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEvents();
+  }
+
+  Future<void> _loadEvents() async {
+    try {
+      final data = await _service.getMyEventsForAppUserId(widget.userId);
+      setState(() {
+        _events = data;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Lỗi tải sự kiện: $e")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Sự kiện của tôi")),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _events.isEmpty
+          ? const Center(
+        child: Text(
+          "Bạn chưa tham gia sự kiện nào.",
+          style: TextStyle(fontSize: 16),
+        ),
+      )
+          : ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: _events.length,
+        itemBuilder: (context, index) {
+          final ev = _events[index];
+          final event = ev['event'];
+          return Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 3,
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            child: ListTile(
+              leading: const Icon(Icons.event, color: Colors.blue),
+              title: Text(event['title'] ?? 'No title'),
+              subtitle: Text(
+                "Bắt đầu: ${event['start_date'] ?? ''}\nKết thúc: ${event['end_date'] ?? ''}",
+              ),
+              trailing: Chip(
+                label: Text(ev['status'] ?? 'N/A'),
+                backgroundColor: Colors.green.shade100,
+              ),
+              onTap: () {
+                // TODO: mở chi tiết sự kiện (event detail screen)
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}

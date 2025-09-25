@@ -11,6 +11,8 @@ import '../screen/event_session_management_screen.dart';
 import '../screen/reporting_screen.dart';
 import '../screen/settings_screen.dart';
 import '../screen/profile_screen.dart';
+import '../screen/my_event_screen.dart';
+import '../screen/envent_list_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -109,9 +111,28 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     },
     {
+      'title': 'Đăng ký sự kiện',
+      'icon': Icons.event_available,
+      'onTap': () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EventListScreen(userId: studentId),
+          ),
+        );
+      },
+    },
+    {
       'title': 'Sự kiện của tôi',
       'icon': Icons.event,
-      'screen': const PlaceholderScreen(title: 'Sự kiện của tôi'),
+      'onTap': () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MyEventScreen(userId: studentId),
+          ),
+        );
+      },
     },
     {
       'title': 'Thông tin cá nhân',
