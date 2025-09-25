@@ -46,7 +46,8 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
       MaterialPageRoute(
         builder: (context) => CreateEditEventScreen(
           event: event,
-          userId: widget.userId, // Luôn truyền userId
+          userId: widget.userId,
+          role: widget.role,// Luôn truyền userId
         ),
       ),
     ).then((result) {

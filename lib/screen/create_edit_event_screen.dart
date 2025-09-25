@@ -8,11 +8,13 @@ import '../services/api_service.dart';
 class CreateEditEventScreen extends StatefulWidget {
   final Event? event;
   final int userId;
+  final String role;
 
   const CreateEditEventScreen({
     super.key,
     this.event,
     required this.userId,
+    required this.role,
   });
 
   @override
@@ -31,6 +33,10 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   bool _isLoading = false;
   late final bool _isEditMode;
 
+  List<Map<String, dynamic>> _organizers = [];
+  int? _selectedOrganizerId;
+  bool _isOrganizersLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +46,34 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
     _organizerController = TextEditingController(text: widget.event?.organizer ?? '');
     _startDate = widget.event?.startDate;
     _endDate = widget.event?.endDate;
+    _selectedOrganizerId = widget.event?.userId;
+
+    if (widget.role == 'admin') {
+      _loadOrganizers();
+    }
+  }
+
+  Future<void> _loadOrganizers() async {
+    setState(() => _isOrganizersLoading = true);
+    try {
+      final List<Map<String, dynamic>> data = await _apiService.fetchOrganizers();
+      setState(() {
+        _organizers = data;
+        if (_isEditMode && _selectedOrganizerId != null) {
+          if (!_organizers.any((org) => org['user_id'] == _selectedOrganizerId)) {
+            _selectedOrganizerId = null;
+          }
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải danh sách Organizer: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isOrganizersLoading = false);
+    }
   }
 
   @override
@@ -77,6 +111,12 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
       );
       return;
     }
+    if (widget.role == 'admin' && _selectedOrganizerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn một Organizer để gán')),
+      );
+      return;
+    }
 
     setState(() { _isLoading = true; });
 
@@ -86,31 +126,20 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
       'organizer': _organizerController.text,
       'start_date': _startDate!.toIso8601String(),
       'end_date': _endDate!.toIso8601String(),
+      'user_id': (widget.role == 'admin') ? _selectedOrganizerId : widget.userId,
     };
 
     try {
       if (_isEditMode) {
-        // CHẾ ĐỘ CẬP NHẬT
-        // SỬA: Dùng `widget.event!.id!` là chính xác vì model đã được chuẩn hóa.
         await _apiService.updateEvent(widget.event!.id!, data);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cập nhật sự kiện thành công!')),
-        );
       } else {
-        // CHẾ ĐỘ TẠO MỚI
-        // Dòng này sẽ fix lỗi RLS của bạn.
-        data['user_id'] = widget.userId;
         await _apiService.createEvent(data);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tạo sự kiện thành công!')),
-        );
       }
-
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_isEditMode ? 'Cập nhật thành công!' : 'Tạo thành công!')),
+      );
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
       final errorMessage = e.toString().replaceFirst("Exception: ", "");
@@ -118,15 +147,15 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
         SnackBar(content: Text('Đã xảy ra lỗi: $errorMessage')),
       );
     } finally {
-      if (mounted) {
-        setState(() { _isLoading = false; });
-      }
+      if (mounted) setState(() { _isLoading = false; });
     }
   }
 
+  // Dán đoạn code này để thay thế cho @override Widget build(BuildContext context) cũ
+
   @override
   Widget build(BuildContext context) {
-    // Phần build giữ nguyên, không cần thay đổi.
+    // Quay về cấu trúc Scaffold đơn giản ban đầu
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditMode ? 'Chỉnh sửa sự kiện' : 'Tạo sự kiện mới'),
@@ -138,23 +167,48 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Giữ lại tất cả các trường nhập liệu, bao gồm cả dropdown
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Tên sự kiện'),
-                validator: (value) => (value == null || value.isEmpty) ? 'Không được để trống' : null,
+                validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _organizerController,
-                decoration: const InputDecoration(labelText: 'Đơn vị tổ chức'),
-                validator: (value) => (value == null || value.isEmpty) ? 'Không được để trống' : null,
+                decoration: const InputDecoration(labelText: 'Đơn vị tổ chức (VD: Khoa CNTT)'),
+                validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
               ),
               const SizedBox(height: 16),
+              // Dropdown chỉ hiển thị cho admin
+              if (widget.role == 'admin')
+                _isOrganizersLoading
+                    ? const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()))
+                    : DropdownButtonFormField<int>(
+                  value: _selectedOrganizerId,
+                  decoration: const InputDecoration(
+                    labelText: 'Gán cho người phụ trách',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: _organizers.map((organizer) {
+                    return DropdownMenuItem<int>(
+                      value: organizer['user_id'] as int,
+                      child: Text(organizer['email'].toString()),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedOrganizerId = value;
+                    });
+                  },
+                  validator: (value) => value == null ? 'Vui lòng chọn người phụ trách' : null,
+                ),
+              if (widget.role == 'admin') const SizedBox(height: 16),
               TextFormField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Mô tả chi tiết'),
                 maxLines: 4,
-                validator: (value) => (value == null || value.isEmpty) ? 'Không được để trống' : null,
+                validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
               ),
               const SizedBox(height: 24),
               Row(
