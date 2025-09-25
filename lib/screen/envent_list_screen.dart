@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Thêm thư viện intl để format ngày tháng
 import '../services/student_service.dart';
 
 class EventListScreen extends StatefulWidget {
@@ -22,10 +23,10 @@ class _EventListScreenState extends State<EventListScreen> {
   }
 
   Future<void> _loadEvents() async {
+    // SỬA: Đặt try-catch bao trùm toàn bộ để bắt lỗi tốt hơn
     try {
       final now = DateTime.now().toIso8601String();
 
-      // Lấy student_id từ userId
       final studentRow = await _service.supabase
           .from('student')
           .select('student_id')
@@ -33,29 +34,35 @@ class _EventListScreenState extends State<EventListScreen> {
           .maybeSingle();
 
       if (studentRow == null) {
-        setState(() => _loading = false);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Không tìm thấy sinh viên!")),
+          const SnackBar(content: Text("Không tìm thấy thông tin sinh viên!")),
         );
+        setState(() => _loading = false);
         return;
       }
 
       final studentId = studentRow['student_id'] as int;
 
+      // ====================================================================
+      // SỬA LỖI CHÍNH: Xóa `!inner` để chuyển sang LEFT JOIN
+      // ====================================================================
       final response = await _service.supabase
           .from('event')
           .select('''
-          event_id,
-          title,
-          start_date,
-          end_date,
-          student_in_event!inner(student_id)
-        ''')
+            event_id,
+            title,
+            start_date,
+            end_date,
+            student_in_event(student_id)
+          ''')
           .gte('end_date', now)
           .order('start_date');
+      // ====================================================================
 
-      // Đánh dấu sự kiện nào đã đăng ký
       final events = List<Map<String, dynamic>>.from(response);
+
+      // Logic kiểm tra đăng ký vẫn hoạt động đúng
       for (var ev in events) {
         final regs = ev['student_in_event'] as List? ?? [];
         ev['registered'] = regs.any((r) => r['student_id'] == studentId);
@@ -66,14 +73,16 @@ class _EventListScreenState extends State<EventListScreen> {
         _loading = false;
       });
     } catch (e) {
-      setState(() => _loading = false);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Lỗi tải sự kiện: $e")),
       );
+      setState(() => _loading = false);
     }
   }
 
   Future<void> _registerEvent(int index, int eventId) async {
+    // ... hàm này đã đúng, không cần sửa ...
     try {
       final studentRow = await _service.supabase
           .from('student')
@@ -90,7 +99,6 @@ class _EventListScreenState extends State<EventListScreen> {
 
       final studentId = studentRow['student_id'] as int;
 
-      // check đã đăng ký chưa
       final existing = await _service.supabase
           .from('student_in_event')
           .select()
@@ -107,7 +115,6 @@ class _EventListScreenState extends State<EventListScreen> {
 
       await _service.registerEvent(studentId, eventId);
 
-      // ✅ Cập nhật UI ngay lập tức
       setState(() {
         _events[index]['registered'] = true;
       });
@@ -122,12 +129,24 @@ class _EventListScreenState extends State<EventListScreen> {
     }
   }
 
+  // SỬA: Format lại ngày tháng cho dễ đọc hơn
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return DateFormat('dd/MM/yyyy').format(date);
+    } catch (e) {
+      return dateString; // Trả về chuỗi gốc nếu không parse được
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Danh sách sự kiện")),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _events.isEmpty
+          ? const Center(child: Text("Không có sự kiện nào sắp diễn ra."))
           : ListView.builder(
         padding: const EdgeInsets.all(12),
         itemCount: _events.length,
@@ -139,15 +158,16 @@ class _EventListScreenState extends State<EventListScreen> {
             ),
             margin: const EdgeInsets.symmetric(vertical: 8),
             child: ListTile(
-              leading: const Icon(Icons.event, color: Colors.blue),
-              title: Text(ev['title'] ?? ''),
+              leading: const Icon(Icons.event_available, color: Colors.blueAccent),
+              title: Text(ev['title'] ?? 'Chưa có tiêu đề'),
               subtitle: Text(
-                "Bắt đầu: ${ev['start_date']}\nKết thúc: ${ev['end_date']}",
+                "Từ: ${_formatDate(ev['start_date'])} - Đến: ${_formatDate(ev['end_date'])}",
               ),
               trailing: ev['registered'] == true
                   ? const Chip(
-                label: Text("Đã đăng ký"),
-                backgroundColor: Colors.greenAccent,
+                label: Text("Đã ĐK", style: TextStyle(color: Colors.white)),
+                backgroundColor: Colors.green,
+                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 0),
               )
                   : ElevatedButton(
                 onPressed: () =>
