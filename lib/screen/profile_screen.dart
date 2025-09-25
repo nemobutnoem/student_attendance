@@ -16,6 +16,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int? _universityId;
   bool _loading = true;
   bool _isNew = false; // true nếu chưa có record student
+  bool _editing = false; // quản lý trạng thái đang sửa
 
   List<Map<String, dynamic>> _universities = [];
 
@@ -47,6 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (data == null) {
         setState(() {
           _isNew = true;
+          _editing = true; // hồ sơ mới thì bật luôn chế độ nhập
           _loading = false;
         });
         return;
@@ -90,6 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
         setState(() {
           _isNew = false;
+          _editing = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Tạo hồ sơ thành công')),
@@ -102,6 +105,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'phone': _phoneController.text.trim(),
           'university_id': _universityId,
         }).eq('user_id', widget.userId);
+        setState(() {
+          _editing = false; // quay về chế độ xem
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cập nhật thành công')),
         );
@@ -125,18 +131,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Họ tên'),
+              readOnly: !_editing,
             ),
             TextField(
               controller: _studentCodeController,
               decoration: const InputDecoration(labelText: 'Mã sinh viên'),
+              readOnly: !_editing,
             ),
             TextField(
               controller: _phoneController,
               decoration: const InputDecoration(labelText: 'Số điện thoại'),
+              readOnly: !_editing,
             ),
 
             const SizedBox(height: 12),
-            // Dropdown chọn trường đại học
             DropdownButtonFormField<int>(
               value: _universityId,
               decoration: const InputDecoration(labelText: 'Trường đại học'),
@@ -146,16 +154,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Text(uni['name'] ?? ''),
                 );
               }).toList(),
-              onChanged: (value) {
+              onChanged: _editing
+                  ? (value) {
                 setState(() {
                   _universityId = value;
                 });
-              },
+              }
+                  : null, // disable khi chưa bật sửa
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
+
+            // Nút hành động
+            _editing
+                ? ElevatedButton(
               onPressed: _saveProfile,
               child: Text(_isNew ? 'Tạo hồ sơ' : 'Lưu'),
+            )
+                : ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _editing = true;
+                });
+              },
+              child: const Text("Sửa"),
             ),
           ],
         ),
