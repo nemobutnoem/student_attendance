@@ -15,7 +15,7 @@ class StudentInEventService {
     try {
       final data = await _supabase.from(_tableName).select('''
         student_in_event_id, status, event_id, student_id,
-        student(student_id, student_code, name, email),
+        student(student_id, student_code, name),
         event(event_id, title)
       ''');
 
@@ -32,7 +32,7 @@ class StudentInEventService {
     try {
       final data = await _supabase.from(_tableName).select('''
         student_in_event_id, status, event_id, student_id,
-        student(student_id, student_code, name, email),
+        student(student_id, student_code, name),
         event(event_id, title)
       ''').eq('event_id', eventId);
 
@@ -86,7 +86,7 @@ class StudentInEventService {
       })
           .select('''
             student_in_event_id, student_id, event_id, status,
-            student(student_id, student_code, name, email),
+            student(student_id, student_code, name),
             event(event_id, title)
           ''')
           .single();

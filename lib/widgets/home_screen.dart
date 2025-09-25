@@ -10,6 +10,8 @@ import 'package:student_attendance/screen/student_management_screen.dart';
 import '../screen/event_session_management_screen.dart';
 import '../screen/reporting_screen.dart';
 import '../screen/settings_screen.dart';
+import '../screen/profile_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   final String role;   // admin | organizer | student
@@ -114,7 +116,14 @@ class _HomeScreenState extends State<HomeScreen> {
     {
       'title': 'Thông tin cá nhân',
       'icon': Icons.person,
-      'screen': const PlaceholderScreen(title: 'Thông tin cá nhân'),
+      'onTap': () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfileScreen(userId: studentId),
+          ),
+        );
+      },
     },
     {
       'title': 'Cài đặt',
