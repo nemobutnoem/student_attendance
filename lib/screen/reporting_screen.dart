@@ -11,7 +11,15 @@ import '../app_theme.dart';
 import 'statistics_screen.dart'; // Import màn hình thống kê
 
 class ReportingScreen extends StatefulWidget {
-  const ReportingScreen({super.key});
+  // SỬA: Thêm role và userId để biết quyền của người dùng
+  final String role;
+  final int userId;
+
+  const ReportingScreen({
+    super.key,
+    required this.role,
+    required this.userId,
+  });
 
   @override
   State<ReportingScreen> createState() => _ReportingScreenState();
@@ -160,7 +168,11 @@ class _ReportingScreenState extends State<ReportingScreen> {
 
   Future<Event?> _showEventSelectionDialog() async {
     try {
-      final events = await _apiService.fetchEvents();
+      // SỬA: Truyền role và userId khi gọi fetchEvents
+      final events = await _apiService.fetchEvents(
+        role: widget.role,
+        userId: widget.userId,
+      );
       if (!mounted) return null;
       if (events.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Không có sự kiện nào để chọn.')));
