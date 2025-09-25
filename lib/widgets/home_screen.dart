@@ -74,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
     {
       'title': 'Quản lý Sự kiện của tôi',
       'icon': Icons.event_note,
-      'screen': const EventManagementScreen(), // Trong màn EventManagementScreen, chỉ query event organizer_id = userId
+      'screen': const EventManagementScreen(), // Trong EventManagementScreen, chỉ query event organizer_id = userId
     },
     {
       'title': 'Quản lý Phiên của tôi',
@@ -125,6 +125,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Lấy theme cho gradient & text
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final cardTheme = Theme.of(context).cardTheme;
+
     // Chọn menu theo role
     List<Map<String, dynamic>> features;
     if (widget.role == "admin") {
@@ -136,36 +141,63 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: Text('Trang chủ (${widget.role})'),
+        title: Text('Trang chủ (${widget.role})', style: textTheme.headlineSmall),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         centerTitle: true,
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16.0),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16.0,
-          mainAxisSpacing: 16.0,
-          childAspectRatio: 1.2,
-        ),
-        itemCount: features.length,
-        itemBuilder: (context, index) {
-          final feature = features[index];
-          return _buildFeatureCard(
-            context,
-            title: feature['title'],
-            icon: feature['icon'],
-            onTap: feature['onTap'] ??
-                    () {
-                  if (feature['screen'] != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => feature['screen']),
-                    );
-                  }
-                },
-          );
-        },
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.secondary.withOpacity(0.3),
+                  colorScheme.background,
+                  colorScheme.primary.withOpacity(0.2),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: const [0.0, 0.6, 1.0],
+              ),
+            ),
+          ),
+          SafeArea(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16.0),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16.0,
+                mainAxisSpacing: 16.0,
+                childAspectRatio: 1.2,
+              ),
+              itemCount: features.length,
+              itemBuilder: (context, index) {
+                final feature = features[index];
+                return _buildFeatureCard(
+                  context,
+                  title: feature['title'],
+                  icon: feature['icon'],
+                  onTap: feature['onTap'] ??
+                          () {
+                        if (feature['screen'] != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => feature['screen']),
+                          );
+                        }
+                      },
+                  colorScheme: colorScheme,
+                  textTheme: textTheme,
+                  cardTheme: cardTheme, // Truyền biến cardTheme (kiểu CardThemeData)
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -175,22 +207,27 @@ class _HomeScreenState extends State<HomeScreen> {
         required String title,
         required IconData icon,
         required VoidCallback onTap,
+        required ColorScheme colorScheme,
+        required TextTheme textTheme,
+        // SỬA LỖI Ở ĐÂY: Sửa kiểu dữ liệu từ CardTheme thành CardThemeData
+        required CardThemeData cardTheme,
       }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Card(
         elevation: 4,
+        color: cardTheme.color ?? colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 48, color: Theme.of(context).primaryColor),
+            Icon(icon, size: 48, color: colorScheme.primary),
             const SizedBox(height: 16),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
