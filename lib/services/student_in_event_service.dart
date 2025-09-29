@@ -120,7 +120,7 @@ class StudentInEventService {
   }
 
   /// Import danh sách sinh viên từ file Excel
-  Future<void> importStudentsFromExcel() async {
+Future<void> importStudentsFromExcel() async {
     try {
       // 1️⃣ Chọn file Excel
       final result = await FilePicker.platform.pickFiles(
@@ -129,45 +129,86 @@ class StudentInEventService {
       );
 
       if (result == null) {
-        print("❌ Không có file nào được chọn");
+        print("❌ Không có file nào được chọn.");
         return;
       }
 
       final file = File(result.files.single.path!);
-      final bytes = file.readAsBytesSync();
+      print("📂 File được chọn: ${file.path}");
+
+      final bytes = await file.readAsBytes();
 
       // 2️⃣ Đọc Excel
       final excel = Excel.decodeBytes(bytes);
-      final sheetName = excel.tables.keys.first;
-      final sheet = excel.tables[sheetName]!;
-
-      if (sheet.rows.length <= 1) {
-        print("⚠️ File Excel không có dữ liệu");
+      if (excel.tables.isEmpty) {
+        print("❌ File Excel không có sheet nào.");
         return;
       }
 
-      final List<Map<String, dynamic>> rowsToInsert = [];
+      final sheetName = excel.tables.keys.first;
+      final sheet = excel.tables[sheetName]!;
+      print("📑 Sheet: $sheetName, Tổng số dòng: ${sheet.rows.length}");
+
+      if (sheet.rows.length <= 1) {
+        print("⚠️ File Excel không có dữ liệu (chỉ có header hoặc rỗng).");
+        return;
+      }
+
+      final List<Map<String, dynamic>> rowsToUpsert = [];
+      int skippedRows = 0;
+      int processedRows = 0;
 
       // 3️⃣ Duyệt từng dòng (bỏ header)
       for (var i = 1; i < sheet.rows.length; i++) {
         final row = sheet.rows[i];
+        print("🔍 Đang xử lý dòng ${i + 1}...");
 
-        final eventIdStr = row[0]?.value?.toString() ?? '';
-        final studentCode = row[1]?.value?.toString() ?? '';
-        final status = row[2]?.value?.toString() ?? 'registered';
+        final eventIdStr = row[0]?.value?.toString().trim() ?? '';
+        final studentCode = row[1]?.value?.toString().trim() ?? '';
+        final status = row[2]?.value?.toString().trim() ?? 'registered';
 
         if (eventIdStr.isEmpty || studentCode.isEmpty) {
-          print("⚠️ Dòng ${i + 1} bị bỏ qua do thiếu event_id hoặc student_code");
+          print("⚠️ Dòng ${i + 1} bị bỏ qua: Thiếu event_id hoặc student_code.");
+          skippedRows++;
           continue;
         }
 
         final eventId = int.tryParse(eventIdStr);
         if (eventId == null) {
-          print("⚠️ Dòng ${i + 1} có event_id không hợp lệ: $eventIdStr");
+          print("⚠️ Dòng ${i + 1} bị bỏ qua: event_id không hợp lệ ($eventIdStr).");
+          skippedRows++;
           continue;
         }
 
-        // 4️⃣ Lookup student_id từ student_code
+        // Kiểm tra status hợp lệ
+        const allowedStatuses = ['registered', 'attended', 'cancelled', 'pending'];
+        if (!allowedStatuses.contains(status.toLowerCase())) {
+          print("⚠️ Dòng ${i + 1} bị bỏ qua: Status không hợp lệ ($status). Chỉ chấp nhận: $allowedStatuses.");
+          skippedRows++;
+          continue;
+        }
+
+        // 4️⃣ Kiểm tra event_id tồn tại
+        Map<String, dynamic>? eventData;
+        try {
+          eventData = await _supabase
+              .from('event')
+              .select('event_id')
+              .eq('event_id', eventId)
+              .maybeSingle();
+        } catch (e) {
+          print("❌ Lỗi khi kiểm tra event_id $eventId ở dòng ${i + 1}: $e");
+          skippedRows++;
+          continue;
+        }
+
+        if (eventData == null) {
+          print("⚠️ Dòng ${i + 1} bị bỏ qua: Không tìm thấy event_id $eventId trong bảng event.");
+          skippedRows++;
+          continue;
+        }
+
+        // 5️⃣ Lookup student_id từ student_code
         Map<String, dynamic>? studentData;
         try {
           studentData = await _supabase
@@ -176,47 +217,81 @@ class StudentInEventService {
               .eq('student_code', studentCode)
               .maybeSingle();
         } catch (e) {
-          print("⚠️ Không tìm thấy sinh viên với mã $studentCode ở dòng ${i + 1}");
+          print("❌ Lỗi khi tìm sinh viên mã $studentCode ở dòng ${i + 1}: $e");
+          skippedRows++;
           continue;
         }
 
         if (studentData == null) {
-          print("⚠️ Không tìm thấy sinh viên với mã $studentCode ở dòng ${i + 1}");
+          print("⚠️ Dòng ${i + 1} bị bỏ qua: Không tìm thấy sinh viên với mã $studentCode trong bảng student.");
+          skippedRows++;
           continue;
         }
 
         final studentId = studentData['student_id'];
+        print("✅ Dòng ${i + 1}: Xác thực OK - event_id: $eventId, student_id: $studentId, status: $status.");
 
-        rowsToInsert.add({
+        rowsToUpsert.add({
           'event_id': eventId,
           'student_id': studentId,
           'status': status,
         });
+        processedRows++;
       }
 
-      if (rowsToInsert.isEmpty) {
-        print("⚠️ Không có dữ liệu hợp lệ để insert");
+      if (rowsToUpsert.isEmpty) {
+        print("⚠️ Không có dữ liệu hợp lệ để upsert. ($skippedRows dòng bị bỏ qua)");
         return;
       }
 
-      // 5️⃣ Bulk insert
-      try {
-        await _supabase.from(_tableName).insert(rowsToInsert);
+      print("📊 Tổng dòng xử lý: $processedRows, Hợp lệ để upsert: ${rowsToUpsert.length} ($skippedRows bị bỏ qua).");
 
-        print("✅ Import thành công ${rowsToInsert.length} dòng!");
-      } on PostgrestException catch (e) {
-        if (e.code == '23505') {
-          print("⚠️ Một số sinh viên đã đăng ký sự kiện, bỏ qua trùng lặp.");
-        } else {
-          print("❌ Lỗi Postgres: ${e.message}");
+      // 6️⃣ Upsert từng dòng một để tránh lỗi bulk với conflict
+      int upsertedCount = 0;
+      for (var row in rowsToUpsert) {
+        final eventId = row['event_id'];
+        final studentId = row['student_id'];
+        final status = row['status'];
+
+        try {
+          // Kiểm tra tồn tại và cập nhật nếu cần
+          final existing = await _supabase
+              .from(_tableName)
+              .select('student_in_event_id, status')
+              .eq('event_id', eventId)
+              .eq('student_id', studentId)
+              .maybeSingle();
+
+          if (existing != null) {
+            // Nếu tồn tại và status khác, update
+            if (existing['status'] != status) {
+              await _supabase
+                  .from(_tableName)
+                  .update({'status': status})
+                  .eq('event_id', eventId)
+                  .eq('student_id', studentId);
+              print("🔄 Dòng (event_id: $eventId, student_id: $studentId) đã cập nhật status thành $status.");
+            } else {
+              print("ℹ️ Dòng (event_id: $eventId, student_id: $studentId) đã tồn tại với status giống nhau, bỏ qua.");
+            }
+          } else {
+            // Nếu chưa tồn tại, insert
+            await _supabase.from(_tableName).insert(row);
+            print("✅ Dòng (event_id: $eventId, student_id: $studentId) đã insert thành công.");
+          }
+          upsertedCount++;
+        } catch (e) {
+          print("❌ Lỗi khi xử lý dòng (event_id: $eventId, student_id: $studentId): $e");
         }
       }
+
+      print("✅ Hoàn tất upsert: $upsertedCount dòng thành công.");
+
     } catch (e) {
-      print("❌ Lỗi khi import Excel: $e");
+      print("❌ Lỗi tổng quát khi import Excel: $e");
     }
   }
 
-  /// Lấy danh sách sự kiện còn hạn (end_date >= NOW)
   Future<List<Map<String, dynamic>>> fetchActiveEvents() async {
     try {
       final data = await _supabase
