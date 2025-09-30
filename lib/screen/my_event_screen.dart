@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:student_attendance/screen/student_event_session_list_screen.dart';
 import '../services/student_service.dart';
 
 class MyEventScreen extends StatefulWidget {
@@ -14,6 +15,7 @@ class _MyEventScreenState extends State<MyEventScreen> {
   final StudentService _service = StudentService();
   bool _loading = true;
   List<Map<String, dynamic>> _events = [];
+  int? _studentId;
 
   @override
   void initState() {
@@ -23,6 +25,13 @@ class _MyEventScreenState extends State<MyEventScreen> {
 
   Future<void> _loadEvents() async {
     try {
+      // Lấy studentId từ userId
+      final studentRow = await _service.supabase
+          .from('student')
+          .select('student_id')
+          .eq('user_id', widget.userId)
+          .maybeSingle();
+      _studentId = studentRow?['student_id'] as int?;
       final data = await _service.getMyEventsForAppUserId(widget.userId);
       setState(() {
         _events = data;
@@ -73,8 +82,23 @@ class _MyEventScreenState extends State<MyEventScreen> {
                 label: Text(ev['status'] ?? 'N/A'),
                 backgroundColor: Colors.green.shade100,
               ),
-              onTap: () {
-                // TODO: mở chi tiết sự kiện (event detail screen)
+              onTap: () async {
+                if (_studentId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Không tìm thấy mã sinh viên.")),
+                  );
+                  return;
+                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => StudentEventSessionListScreen(
+                      eventId: event['event_id'],
+                      eventTitle: event['title'],
+                      studentId: _studentId!,
+                    ),
+                  ),
+                );
               },
             ),
           );

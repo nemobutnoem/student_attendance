@@ -1,108 +1,99 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'dart:convert';
-import '../services/SessionCheckInService.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class QRScannerScreen extends StatefulWidget {
-  final int studentId; // ID của sinh viên đang đăng nhập
-
-  const QRScannerScreen({Key? key, required this.studentId}) : super(key: key);
+  const QRScannerScreen({super.key});
 
   @override
   State<QRScannerScreen> createState() => _QRScannerScreenState();
 }
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
-  final MobileScannerController _scannerController = MobileScannerController();
-  final SessionCheckInService _checkinService = SessionCheckInService();
   bool _isProcessing = false;
 
-  @override
-  void dispose() {
-    _scannerController.dispose();
-    super.dispose();
+  Future<Map<String, int>> _getStudentInfo() async {
+    final authId = Supabase.instance.client.auth.currentUser?.id;
+    if (authId == null) throw Exception('Chưa đăng nhập');
+    final appUser = await Supabase.instance.client
+        .from('app_user')
+        .select('user_id')
+        .eq('auth_id', authId)
+        .single();
+    final int userId = appUser['user_id'];
+    final student = await Supabase.instance.client
+        .from('student')
+        .select('student_id')
+        .eq('user_id', userId)
+        .single();
+    final int studentId = student['student_id'];
+    return {'userId': userId, 'studentId': studentId};
   }
 
-  Future<void> _handleQRCode(BarcodeCapture barcodeCapture) async {
-    // Ngăn việc xử lý nhiều lần một mã QR
+  Future<void> _handleBarcode(String rawValue) async {
     if (_isProcessing) return;
-    setState(() {
-      _isProcessing = true;
-    });
+    _isProcessing = true;
+    try {
+      final data = jsonDecode(rawValue);
+      final int sessionId = data['session_id'];
+      final info = await _getStudentInfo();
 
-    final List<Barcode> barcodes = barcodeCapture.barcodes;
-    if (barcodes.isNotEmpty) {
-      final String? rawValue = barcodes.first.rawValue;
-      if (rawValue != null) {
-        try {
-          final data = jsonDecode(rawValue);
-          final int sessionId = data['session_id'];
+      // Kiểm tra đã điểm danh chưa
+      final existing = await Supabase.instance.client
+          .from('session_checkin')
+          .select()
+          .eq('session_id', sessionId)
+          .eq('student_id', info['studentId'] as Object)
+          .maybeSingle();
 
-          // Gọi service để check-in
-          final bool success = await _checkinService.createCheckin(
-            sessionId: sessionId,
-            studentId: widget.studentId,
-            method: 'QR',
+      if (existing != null) {
+        // Đã điểm danh rồi
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Bạn đã được điểm danh phiên này rồi!")),
           );
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(success ? 'Check-in thành công!' : 'Check-in thất bại.'),
-                backgroundColor: success ? Colors.green : Colors.red,
-              ),
-            );
-            Navigator.of(context).pop(); // Quay lại màn hình trước đó
-          }
-        } catch (e) {
-          // Xử lý lỗi nếu QR không đúng định dạng hoặc có lỗi mạng
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Mã QR không hợp lệ hoặc có lỗi xảy ra.'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
         }
+        return;
       }
-    }
-    // Mở lại xử lý sau một khoảng thời gian ngắn
-    Future.delayed(const Duration(seconds: 2), () {
+
+      // Chưa điểm danh, thực hiện insert
+      await Supabase.instance.client.from('session_checkin').insert({
+        'session_id': sessionId,
+        'user_id': info['userId'],
+        'student_id': info['studentId'],
+        'method': 'QR',
+        'checkin_time': DateTime.now().toIso8601String(),
+      });
+
       if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Điểm danh thành công ✅")),
+        );
+        Navigator.pop(context);
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Lỗi quét mã: $e")),
+        );
+      }
+    } finally {
+      _isProcessing = false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Quét mã QR để Check-in')),
-      body: Stack(
-        children: [
-          MobileScanner(
-            controller: _scannerController,
-            onDetect: _handleQRCode,
-          ),
-          // Lớp phủ để tạo giao diện đẹp hơn
-          Center(
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white, width: 4),
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          if (_isProcessing)
-            const Center(
-              child: CircularProgressIndicator(),
-            ),
-        ],
+      appBar: AppBar(title: const Text("Quét mã QR")),
+      body: MobileScanner(
+        onDetect: (barcodeCapture) {
+          final barcode = barcodeCapture.barcodes.first;
+          if (barcode.rawValue != null) {
+            _handleBarcode(barcode.rawValue!);
+          }
+        },
       ),
     );
   }
