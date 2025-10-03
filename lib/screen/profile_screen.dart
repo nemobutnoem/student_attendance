@@ -13,10 +13,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
   final _studentCodeController = TextEditingController();
   final _phoneController = TextEditingController();
+
   int? _universityId;
+  int? _studentId; // 👈 khóa chính student_id để update chính xác
   bool _loading = true;
-  bool _isNew = false; // true nếu chưa có record student
-  bool _editing = false; // quản lý trạng thái đang sửa
+  bool _isNew = false;
+  bool _editing = false;
 
   List<Map<String, dynamic>> _universities = [];
 
@@ -29,16 +31,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _fetchData() async {
     final supabase = Supabase.instance.client;
     try {
-      // Fetch danh sách university
+      // Lấy danh sách trường
       final universityList = await supabase
           .from('university')
           .select('university_id, name')
           .order('name');
-      // Fetch thông tin student
+
+      // Lấy hồ sơ student theo user_id (lấy record mới nhất nếu có nhiều)
       final data = await supabase
           .from('student')
-          .select()
+          .select('student_id, name, student_code, phone, university_id')
           .eq('user_id', widget.userId)
+          .order('created_at', ascending: false)
+          .limit(1)
           .maybeSingle();
 
       setState(() {
@@ -48,17 +53,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (data == null) {
         setState(() {
           _isNew = true;
-          _editing = true; // hồ sơ mới thì bật luôn chế độ nhập
+          _editing = true; // Hồ sơ mới thì bật nhập
           _loading = false;
         });
         return;
       }
 
+      // Gán dữ liệu khi đã có hồ sơ
       setState(() {
+        _studentId = data['student_id'] as int;
         _nameController.text = data['name'] ?? '';
         _studentCodeController.text = data['student_code'] ?? '';
         _phoneController.text = data['phone'] ?? '';
-        _universityId = data['university_id'];
+        _universityId = data['university_id'] as int?;
         _isNew = false;
         _loading = false;
       });
@@ -81,33 +88,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
         return;
       }
+
       if (_isNew) {
         // Insert mới
-        await supabase.from('student').insert({
+        final inserted = await supabase.from('student').insert({
           'user_id': widget.userId,
           'name': _nameController.text.trim(),
           'student_code': _studentCodeController.text.trim(),
           'phone': _phoneController.text.trim(),
           'university_id': _universityId,
-        });
+        }).select('student_id').single(); // 👈 chỉ lấy student_id
+
         setState(() {
+          _studentId = inserted['student_id'] as int;
           _isNew = false;
           _editing = false;
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Tạo hồ sơ thành công')),
         );
       } else {
-        // Update
-        await supabase.from('student').update({
+        print("👉 Updating student_id = $_studentId");
+
+        // Update theo student_id
+        final updated = await supabase.from('student').update({
           'name': _nameController.text.trim(),
           'student_code': _studentCodeController.text.trim(),
           'phone': _phoneController.text.trim(),
           'university_id': _universityId,
-        }).eq('user_id', widget.userId);
+        }).eq('student_id', _studentId!).select('student_id');
+
+        print("✅ Update result: $updated");
+
+        if (updated.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không tìm thấy hồ sơ để cập nhật')),
+          );
+          return;
+        }
+
         setState(() {
-          _editing = false; // quay về chế độ xem
+          _editing = false;
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cập nhật thành công')),
         );
@@ -143,7 +167,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: const InputDecoration(labelText: 'Số điện thoại'),
               readOnly: !_editing,
             ),
-
             const SizedBox(height: 12),
             DropdownButtonFormField<int>(
               value: _universityId,
@@ -160,7 +183,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _universityId = value;
                 });
               }
-                  : null, // disable khi chưa bật sửa
+                  : null,
             ),
             const SizedBox(height: 20),
 
