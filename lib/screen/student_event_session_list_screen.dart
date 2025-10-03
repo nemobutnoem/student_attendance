@@ -28,27 +28,24 @@ class _StudentEventSessionListScreenState extends State<StudentEventSessionListS
   }
 
   Future<List<Map<String, dynamic>>> _fetchSessions() async {
-    // 1. Lấy tất cả phiên của sự kiện này
-    final sessions = await Supabase.instance.client
+    final supabase = Supabase.instance.client;
+
+    final data = await supabase
         .from('event_session')
-        .select('session_id, title, start_time, end_time, location')
+        .select('session_id, title, start_time, end_time, location, session_checkin(session_id, student_id)')
         .eq('event_id', widget.eventId);
 
-    // 2. Lấy các phiên đã điểm danh của sinh viên này
-    final checkins = await Supabase.instance.client
-        .from('session_checkin')
-        .select('session_id')
-        .eq('student_id', widget.studentId);
+    print("👉 Raw sessions: $data");
 
-    final checkedSessionIds = (checkins as List)
-        .map((e) => e['session_id'] as int)
-        .toSet();
+    // map lại dữ liệu
+    return (data as List).map<Map<String, dynamic>>((s) {
+      final session = Map<String, dynamic>.from(s);
+      final checkins = session['session_checkin'] as List<dynamic>? ?? [];
+      final checkedIn = checkins.any((c) => c['student_id'] == widget.studentId);
 
-    // 3. Gán trạng thái đã điểm danh cho từng phiên
-    return (sessions as List).map<Map<String, dynamic>>((session) {
       return {
-        ...session as Map<String, dynamic>,
-        'checked_in': checkedSessionIds.contains(session['session_id'])
+        ...session,
+        'checked_in': checkedIn,
       };
     }).toList();
   }
