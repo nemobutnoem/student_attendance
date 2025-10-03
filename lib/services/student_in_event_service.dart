@@ -305,4 +305,18 @@ Future<void> importStudentsFromExcel() async {
       rethrow;
     }
   }
+
+  /// Lấy tất cả sự kiện (cũ + mới)
+  Future<List<Map<String, dynamic>>> fetchAllEvents() async {
+    try {
+      final data = await _supabase
+          .from('event')
+          .select('event_id, title, description, organizer, start_date, end_date, user_id');
+
+      return List<Map<String, dynamic>>.from(data);
+    } catch (e) {
+      print("Lỗi khi lấy tất cả sự kiện: $e");
+      rethrow;
+    }
+  }
 }
