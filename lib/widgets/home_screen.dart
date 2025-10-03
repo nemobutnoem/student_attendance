@@ -12,7 +12,7 @@ import '../screen/reporting_screen.dart';
 import '../screen/settings_screen.dart';
 import '../screen/profile_screen.dart';
 import '../screen/my_event_screen.dart';
-import '../screen/event_list_screen.dart';
+import '../screen/envent_list_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {

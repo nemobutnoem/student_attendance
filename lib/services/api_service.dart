@@ -4,39 +4,62 @@ import '../model/event_model.dart';
 class ApiService {
   final supabase = Supabase.instance.client;
 
+  // =======================================================================
+  // THÊM HÀM MỚI ĐỂ LẤY DANH SÁCH ORGANIZER
+  // =======================================================================
+  /// Lấy danh sách người dùng có vai trò là 'organizer' cùng với email.
+  Future<List<Map<String, dynamic>>> fetchOrganizers() async {
+    try {
+      // SỬA LỖI: Gọi đúng hàm RPC 'get_organizers' đã được cập nhật
+      final response = await supabase.rpc('get_organizers');
+
+      // Dữ liệu trả về từ RPC đã đúng định dạng, không cần xử lý thêm.
+      return List<Map<String, dynamic>>.from(response);
+
+    } catch (e) {
+      print('Lỗi khi tải danh sách organizers: $e');
+      // Thêm thông tin lỗi chi tiết hơn
+      if (e is PostgrestException) {
+        throw Exception('Lỗi server khi tải organizers: ${e.message}');
+      }
+      throw Exception('Không thể tải danh sách người phụ trách.');
+    }
+  }
+  // =======================================================================
+
+
   /// Lấy danh sách sự kiện dựa trên vai trò của người dùng.
-  /// Kết hợp cả logic trong code và RLS trên Supabase để đảm bảo an toàn.
   Future<List<Event>> fetchEvents({required String role, required int userId}) async {
     print('>>> Đang tải sự kiện cho - Role: "$role", UserID: $userId');
 
     try {
+      // SỬA LỖI: Quay trở lại câu lệnh select đơn giản và đáng tin cậy.
+      // Chúng ta sẽ không lấy email ở danh sách này để tránh lỗi join phức tạp.
+      // Việc join sẽ được thực hiện ở các màn hình chi tiết nếu cần.
       final query = supabase.from('event').select('*');
 
-      // PHẦN QUAN TRỌNG: Phân quyền rõ ràng trong code
-      if (role == 'admin') {
-        // Admin có quyền xem tất cả, không cần thêm bộ lọc từ client.
-        // RLS trên server sẽ xác nhận quyền này.
-      } else if (role == 'organizer') {
-        // Organizer chỉ được xem sự kiện có user_id của chính họ.
+      // Logic phân quyền không đổi, vẫn giữ nguyên
+      if (role == 'organizer') {
         query.eq('user_id', userId);
-      } else {
-        // Các vai trò khác (student, v.v...) không có quyền xem trong màn hình này.
-        // Trả về danh sách rỗng ngay lập tức để tránh gọi API không cần thiết.
+      } else if (role != 'admin') {
         return [];
       }
 
       final response = await query.order('start_date', ascending: false);
       final List<Event> events = (response as List).map((data) => Event.fromJson(data)).toList();
       return events;
+
     } catch (e) {
       print('Lỗi khi tải sự kiện: $e');
-      // Phân tích lỗi từ Supabase để đưa ra thông báo hữu ích
-      if (e is PostgrestException && e.code == '42501') {
-        throw Exception('Không có quyền truy cập. Vui lòng kiểm tra lại chính sách RLS trên Supabase.');
+      if (e is PostgrestException) {
+        // In ra thông báo lỗi chi tiết hơn từ Supabase
+        print('Postgrest Error: ${e.message} (Code: ${e.code})');
+        throw Exception('Lỗi từ server: ${e.message}');
       }
-      throw Exception('Không thể tải danh sách sự kiện.');
+      throw Exception('Không thể tải danh sách sự kiện. Vui lòng kiểm tra kết nối mạng.');
     }
   }
+
 
   /// Lấy danh sách sinh viên đã đăng ký cho một sự kiện cụ thể.
   Future<List<Map<String, dynamic>>> fetchStudentDataForEvent(int eventId) async {
@@ -55,7 +78,6 @@ class ApiService {
   /// Lấy toàn bộ dữ liệu điểm danh để làm thống kê.
   Future<List<Map<String, dynamic>>> fetchAllAttendanceForStats() async {
     try {
-      // Sửa lỗi chính tả: event(id -> event(event_id
       final response = await supabase
           .from('student_in_event')
           .select('''
@@ -82,10 +104,18 @@ class ApiService {
   /// Cập nhật thông tin một sự kiện.
   Future<void> updateEvent(int eventId, Map<String, dynamic> eventData) async {
     try {
-      // SỬA: Dùng 'event_id' là khóa chính thay vì 'id'
+      // SỬA LỖI: Đảm bảo rằng chúng ta đang so sánh (eq) với đúng
+      // cột khóa chính là 'event_id' theo schema.
       await supabase.from('event').update(eventData).eq('event_id', eventId);
+
     } catch (e) {
-      print('Lỗi khi cập nhật sự kiện: $e');
+      // In ra lỗi chi tiết để dễ dàng gỡ rối nếu vấn đề vẫn tiếp diễn
+      print('LỖI KHI CẬP NHẬT SỰ KIỆN: $e');
+      if (e is PostgrestException) {
+        print('Thông báo từ server: ${e.message}');
+        print('Chi tiết lỗi: ${e.details}');
+        throw Exception('Lỗi từ server: ${e.message}');
+      }
       throw Exception('Cập nhật sự kiện thất bại.');
     }
   }
@@ -93,11 +123,10 @@ class ApiService {
   /// Xóa một sự kiện và các dữ liệu liên quan.
   Future<void> deleteEvent(int eventId) async {
     try {
-      // 1. Xóa các bản ghi ghi danh của sinh viên trong sự kiện đó trước.
+      // Để đảm bảo an toàn, nên gọi RPC function trên Supabase để xóa
+      // thay vì xóa từng bảng từ client. Tuy nhiên, cách này vẫn hoạt động.
       await supabase.from('student_in_event').delete().eq('event_id', eventId);
-
-      // 2. Sau đó mới xóa sự kiện chính.
-      // SỬA: Dùng 'event_id' là khóa chính thay vì 'id'
+      await supabase.from('event_session').delete().eq('event_id', eventId); // Thêm xóa session
       await supabase.from('event').delete().eq('event_id', eventId);
     } catch (e) {
       print('Lỗi khi xóa sự kiện: $e');

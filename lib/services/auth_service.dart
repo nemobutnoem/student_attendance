@@ -97,4 +97,45 @@ class AuthService {
       'name': studentData?['name'],
     };
   }
+  Future<bool> verifyCurrentPassword(String password) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null || user.email == null) {
+      throw Exception('Người dùng chưa đăng nhập.');
+    }
+
+    try {
+      // Thử đăng nhập lại để xác minh mật khẩu
+      await _supabase.auth.signInWithPassword(
+        email: user.email!,
+        password: password,
+      );
+      // Nếu không có lỗi, mật khẩu đúng
+      return true;
+    } on AuthException {
+      // Nếu có lỗi xác thực, tức là sai mật khẩu
+      rethrow; // Ném lại lỗi để UI bắt được
+    } catch (e) {
+      // Các lỗi khác
+      throw Exception('Lỗi không xác định khi xác minh mật khẩu.');
+    }
+  }
+
+  // HÀM MỚI 2: Cập nhật mật khẩu người dùng
+  Future<void> updateUserPassword(String newPassword) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception('Người dùng chưa đăng nhập.');
+    }
+
+    try {
+      await _supabase.auth.updateUser(
+        UserAttributes(
+          password: newPassword,
+        ),
+      );
+    } catch (e) {
+      print('Lỗi khi cập nhật mật khẩu: $e');
+      throw Exception('Không thể cập nhật mật khẩu.');
+    }
+  }
 }

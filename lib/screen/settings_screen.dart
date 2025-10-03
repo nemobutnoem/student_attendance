@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../screen/login_screen.dart';
 import '../theme_provider.dart'; // SỬA: Import ThemeProvider
-
+import '../screen/change_password_screen.dart';
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -149,8 +149,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.lock_outline),
             title: const Text('Đổi mật khẩu'),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Chức năng đang được phát triển!')),
+              // SỬA Ở ĐÂY:
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
               );
             },
           ),
