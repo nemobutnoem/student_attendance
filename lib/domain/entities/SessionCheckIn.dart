@@ -2,8 +2,8 @@ class SessionCheckIn {
   final int checkinId;
   final int sessionId;
   final int studentId;
-  final int userId;
-  final DateTime checkinTime;
+  final int? userId;
+  final DateTime? checkinTime;
   final String method;
 
   SessionCheckIn({
@@ -21,8 +21,10 @@ class SessionCheckIn {
       sessionId: json['session_id'],
       studentId: json['student_id'],
       userId: json['user_id'],
-      checkinTime: DateTime.parse(json['checkin_time']),
-      method: json['method'],
+      checkinTime: json['checkin_time'] != null
+          ? DateTime.tryParse(json['checkin_time'])
+          : null,
+      method: json['method'] ?? '',
     );
   }
 
@@ -32,7 +34,7 @@ class SessionCheckIn {
       'session_id': sessionId,
       'student_id': studentId,
       'user_id': userId,
-      'checkin_time': checkinTime.toIso8601String(),
+      'checkin_time': checkinTime?.toIso8601String(),
       'method': method,
     };
   }

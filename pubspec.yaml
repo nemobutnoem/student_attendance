@@ -48,6 +48,9 @@ dependencies:
   provider: ^6.1.5+1
   package_info_plus: ^8.0.0 # Để lấy phiên bản ứng dụng
   url_launcher: ^6.3.0
+  app_links: ^3.4.2
+  firebase_core: ^2.25.4
+  firebase_auth: 4.16.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
